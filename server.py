@@ -10,6 +10,9 @@ class SimpleHTTPServer:
         
     def start(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # Add these two lines to allow port reuse
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         server_socket.bind((self.host, self.port))
         server_socket.listen(5)
         print(f"Servidor HTTP escuchando en {self.host}:{self.port}")
@@ -25,9 +28,13 @@ class SimpleHTTPServer:
             if not request_data:
                 return
             
+            print(f"Received request:\n{request_data}")  # Debug print
+            
             request_lines = request_data.split("\r\n")
             request_line = request_lines[0]
             method, path, _ = request_line.split()
+            
+            print(f"Method: {method}, Path: {path}")  # Debug print
             
             headers = {}
             body = ""
@@ -43,26 +50,52 @@ class SimpleHTTPServer:
                     body += line + "\n"
             
             response = ""
-            if path == "/static.html" and method == "GET":
-                response = self.serve_static("static.html")
+            if method == "GET" and path.endswith('.html'):
+                print(f"Serving HTML file: {path}")  # Debug print
+                file_name = path[1:] if path.startswith('/') else path
+                response = self.serve_static(file_name)
             elif path.startswith("/resource"):
                 response = self.handle_resource(method, path, body)
             else:
                 response = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
             
+            print(f"Sending response:\n{response}")  # Debug print
             client_socket.sendall(response.encode())
+            
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Error handling request: {e}")
+            error_response = "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n"
+            try:
+                client_socket.sendall(error_response.encode())
+            except:
+                pass
         finally:
+            try:
+                client_socket.shutdown(socket.SHUT_RDWR)
+            except:
+                pass
             client_socket.close()
     
     def serve_static(self, file_path):
         try:
+            print(f"Opening file: {file_path}")  # Debug print
             with open(file_path, "r") as file:
                 content = file.read()
-            return f"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {len(content)}\r\n\r\n{content}"
+            
+            response = "HTTP/1.1 200 OK\r\n"
+            response += "Content-Type: text/html\r\n"
+            response += f"Content-Length: {len(content)}\r\n"
+            response += "Connection: close\r\n"
+            response += "\r\n"
+            response += content
+            
+            return response
         except FileNotFoundError:
-            return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
+            print(f"File not found: {file_path}")  # Debug print
+            return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+        except Exception as e:
+            print(f"Error reading file: {e}")  # Debug print
+            return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     
     def handle_resource(self, method, path, body):
         resource_id = path.split("/")[-1]
