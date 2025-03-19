@@ -1,3 +1,29 @@
+# -*- coding: utf-8 -*-
+"""
+Authors:
+    - Author Mxz11
+    - Añadir vuestros nombres aquí!
+
+Description:
+    This script is used for handling the client of the HTTP client-server system.
+
+How to compile:
+    1. Make sure you have Python installed (version Python 3.12.4 or higher).
+    2. Open a terminal or command prompt.
+    3. Navigate to the directory where this script is located.
+    4. Run the script with the following command:
+        python3 client.py
+    
+    Note: If you're using a virtual environment, activate it before running the script.
+
+Creation Date:
+    19/3/2025
+
+Last Modified:
+    19/3/2025
+
+"""
+
 import socket
 import sys
 
@@ -40,9 +66,9 @@ def main():
             
             # Special handling for GET requests
             if method == 'GET':
-                file_type = input("Enter request type (html/resource): ").lower()
-                if file_type == 'html':
-                    filename = input("Enter HTML file name (e.g., index.html): ")
+                file_type = input("Enter request type (html/txt/resource): ").lower()
+                if file_type in ['html', 'txt']:
+                    filename = input(f"Enter {file_type} file name (e.g., {'index.html' if file_type == 'html' else 'example.txt'}): ")
                     path = f"/{filename}"
                 else:
                     path = input("Enter resource path (e.g., /resource/1): ")

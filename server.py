@@ -1,3 +1,29 @@
+# -*- coding: utf-8 -*-
+"""
+Authors:
+    - Author Mxz11
+    - Añadir vuestros nombres aquí!
+
+Description:
+    This script is used for handling the server of the HTTP client-server system.
+
+How to compile:
+    1. Make sure you have Python installed (version Python 3.12.4 or higher).
+    2. Open a terminal or command prompt.
+    3. Navigate to the directory where this script is located.
+    4. Run the script with the following command:
+        python3 server.py
+    
+    Note: If you're using a virtual environment, activate it before running the script.
+
+Creation Date:
+    19/3/2025
+
+Last Modified:
+    19/3/2025
+
+"""
+
 import socket
 import json
 import threading
@@ -50,10 +76,13 @@ class SimpleHTTPServer:
                     body += line + "\n"
             
             response = ""
-            if method == "GET" and path.endswith('.html'):
-                print(f"Serving HTML file: {path}")  # Debug print
+            if method == "GET" and (path.endswith('.html') or path.endswith('.txt')):
+                print(f"Serving file: {path}")  # Debug print
                 file_name = path[1:] if path.startswith('/') else path
                 response = self.serve_static(file_name)
+            elif method == "DELETE":
+                file_name = path[1:] if path.startswith('/') else path
+                response = self.delete_file(file_name)
             elif path.startswith("/resource"):
                 response = self.handle_resource(method, path, body)
             else:
@@ -82,8 +111,11 @@ class SimpleHTTPServer:
             with open(file_path, "r") as file:
                 content = file.read()
             
+            # Determine content type based on file extension
+            content_type = "text/html" if file_path.endswith('.html') else "text/plain"
+            
             response = "HTTP/1.1 200 OK\r\n"
-            response += "Content-Type: text/html\r\n"
+            response += f"Content-Type: {content_type}\r\n"
             response += f"Content-Length: {len(content)}\r\n"
             response += "Connection: close\r\n"
             response += "\r\n"
@@ -96,6 +128,26 @@ class SimpleHTTPServer:
         except Exception as e:
             print(f"Error reading file: {e}")  # Debug print
             return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    
+    def delete_file(self, file_path):
+        try:
+            print(f"Attempting to delete file: {file_path}")
+            import os
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                response = "HTTP/1.1 200 OK\r\n"
+                response += "Content-Type: text/plain\r\n"
+                message = f"File {file_path} was successfully deleted"
+                response += f"Content-Length: {len(message)}\r\n"
+                response += "\r\n"
+                response += message
+                return response
+            else:
+                print(f"File not found: {file_path}")
+                return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n"
+        except Exception as e:
+            print(f"Error deleting file: {e}")
+            return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n"
     
     def handle_resource(self, method, path, body):
         resource_id = path.split("/")[-1]
