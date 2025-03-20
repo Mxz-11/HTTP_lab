@@ -27,6 +27,8 @@ Last Modified:
 import socket
 import json
 import threading
+import os
+from datetime import datetime
 
 class SimpleHTTPServer:
     def __init__(self, host='localhost', port=8080):
@@ -76,10 +78,19 @@ class SimpleHTTPServer:
                     body += line + "\n"
             
             response = ""
-            if method == "GET" and (path.endswith('.html') or path.endswith('.txt')):
-                print(f"Serving file: {path}")  # Debug print
+            if method == "GET":
                 file_name = path[1:] if path.startswith('/') else path
-                response = self.serve_static(file_name)
+                # Check file type
+                if any(file_name.endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp']):
+                    print(f"Serving image file: {path}")
+                    response = self.serve_static(file_name, headers)
+                # Check if it's an audio file
+                elif any(file_name.endswith(ext) for ext in ['.mp3', '.wav', '.ogg', '.mp4']):
+                    print(f"Serving audio file: {path}")
+                    response = self.serve_static(file_name, headers)
+                elif any(path.endswith(ext) for ext in ['.html', '.txt', '.md']):
+                    print(f"Serving text file: {path}")
+                    response = self.serve_static(file_name, headers)
             elif method == "DELETE":
                 file_name = path[1:] if path.startswith('/') else path
                 response = self.delete_file(file_name)
@@ -105,28 +116,63 @@ class SimpleHTTPServer:
                 pass
             client_socket.close()
     
-    def serve_static(self, file_path):
+    def get_content_type(self, file_path):
+        extension = file_path.split('.')[-1].lower()
+        content_types = {
+            # Text files
+            'txt': 'text/plain',
+            'html': 'text/html',
+            'css': 'text/css',
+            'md': 'text/markdown',
+            # Application files
+            'json': 'application/json',
+            'pdf': 'application/pdf',
+            'xml': 'application/xml',
+            # Image files
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'gif': 'image/gif',
+            'svg': 'image/svg+xml',
+            'webp': 'image/webp',
+            # Audio files
+            'mp3': 'audio/mpeg',
+            'wav': 'audio/wav',
+            'ogg': 'audio/ogg',
+            'mp4': 'audio/mp4',  # For audio MP4
+            # Video files
+            'mp4': 'video/mp4',
+            'avi': 'video/x-msvideo'
+        }
+        return content_types.get(extension, 'application/octet-stream')
+
+    def serve_static(self, file_path, headers=None):
         try:
-            print(f"Opening file: {file_path}")  # Debug print
-            with open(file_path, "r") as file:
-                content = file.read()
+            # Normalize file path to prevent directory traversal
+            file_path = os.path.normpath(file_path)
             
-            # Determine content type based on file extension
-            content_type = "text/html" if file_path.endswith('.html') else "text/plain"
+            # Check if file exists and is within current directory
+            if not os.path.exists(file_path) or not os.path.isfile(file_path):
+                print(f"File not found or invalid: {file_path}")
+                return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
+            
+            # Handle different content types
+            content_type = self.get_content_type(file_path)
+            
+            # Read file in binary mode for all types
+            with open(file_path, 'rb') as file:
+                content = file.read()
             
             response = "HTTP/1.1 200 OK\r\n"
             response += f"Content-Type: {content_type}\r\n"
             response += f"Content-Length: {len(content)}\r\n"
-            response += "Connection: close\r\n"
-            response += "\r\n"
-            response += content
+            response += "Connection: close\r\n\r\n"
             
-            return response
-        except FileNotFoundError:
-            print(f"File not found: {file_path}")  # Debug print
-            return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+            # Convert response headers to bytes and concatenate with content
+            return response.encode() + content
+                
         except Exception as e:
-            print(f"Error reading file: {e}")  # Debug print
+            print(f"Error serving file: {e}")
             return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     
     def delete_file(self, file_path):

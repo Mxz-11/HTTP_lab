@@ -26,6 +26,33 @@ Last Modified:
 
 import socket
 import sys
+from datetime import datetime
+import os
+
+# Add this class to store GET request information
+class GetRequestInfo:
+    def __init__(self, filename, content, timestamp):
+        self.filename = filename
+        self.content = content
+        self.timestamp = timestamp
+    
+    def __str__(self):
+        return f"File: {self.filename}\nTimestamp: {self.timestamp}\nContent:\n{self.content}\n"
+
+class Cache:
+    def __init__(self, filename, content, timestamp):
+        self.filename = filename
+        self.content = content
+        self.timestamp = timestamp
+    
+    def __str__(self):
+        return f"File: {self.filename}\nTimestamp: {self.timestamp}\nContent:\n{self.content}\n"
+
+def find_in_cache(cache_list, filename):
+    for cache_entry in cache_list:
+        if cache_entry.filename == filename:
+            return cache_entry
+    return None
 
 def create_client():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -39,50 +66,245 @@ def connect_to_server(client_socket, host='localhost', port=8080):
         print("Connection failed - server might be offline")
         sys.exit(1)
 
-def send_request(client_socket, message):
+def handle_audio_response(response):
+    """Handle binary audio data from response"""
+    try:
+        # Split headers and content
+        header_end = response.find(b'\r\n\r\n')
+        if header_end == -1:
+            return None
+        
+        headers = response[:header_end].decode('utf-8')
+        content = response[header_end + 4:]  # Skip \r\n\r\n
+        
+        # Check if response is OK
+        if '200 OK' not in headers:
+            print(f"Error in response: {headers}")
+            return None
+            
+        return content
+    except Exception as e:
+        print(f"Error handling audio response: {e}")
+        return None
+
+def handle_binary_response(response):
+    """Handle binary data from response"""
+    try:
+        # Split headers and content
+        header_end = response.find(b'\r\n\r\n')
+        if header_end == -1:
+            return None
+        
+        headers = response[:header_end].decode('utf-8')
+        content = response[header_end + 4:]  # Skip \r\n\r\n
+        
+        # Check if response is OK
+        if '200 OK' not in headers:
+            print(f"Error in response: {headers}")
+            return None
+            
+        # Extract Content-Type from headers
+        content_type = None
+        for line in headers.split('\r\n'):
+            if line.startswith('Content-Type:'):
+                content_type = line.split(': ')[1].strip()
+                break
+        
+        if not content_type or not content_type.startswith('image/'):
+            print(f"Invalid content type: {content_type}")
+            return None
+            
+        return content
+    except Exception as e:
+        print(f"Error handling binary response: {e}")
+        return None
+
+def send_request(client_socket, message, is_binary=False):
     try:
         client_socket.send(message.encode('utf-8'))
-        response = client_socket.recv(4096).decode('utf-8')  # Increased buffer size
-        return response
+        if is_binary:
+            # For binary data, receive in chunks
+            response = b''
+            while True:
+                chunk = client_socket.recv(8192)
+                if not chunk:
+                    break
+                response += chunk
+                # Check if we've received the complete response
+                if b'\r\n\r\n' in response and len(response) >= int(response.split(b'\r\n')[1].split(b': ')[1]):
+                    break
+            return response
+        else:
+            response = client_socket.recv(4096).decode('utf-8')
+            return response
     except Exception as e:
         print(f"Error sending/receiving data: {e}")
         return None
 
+def send_head_request(client_socket, path):
+    """Send HEAD request to check last modification date"""
+    try:
+        head_request = f"HEAD {path} HTTP/1.1\r\n"
+        head_request += "Host: localhost\r\n\r\n"
+        client_socket.send(head_request.encode('utf-8'))
+        response = client_socket.recv(4096).decode('utf-8')
+        return response
+    except Exception as e:
+        print(f"Error checking modification date: {e}")
+        return None
+
+def check_modification_time(filename, cached_entry, cache_list):
+    try:
+        client = create_client()
+        connect_to_server(client)
+        
+        # Send If-Modified-Since request
+        request = f"GET /{filename} HTTP/1.1\r\n"
+        request += "Host: localhost\r\n"
+        request += f"If-Modified-Since: {cached_entry.timestamp}\r\n"
+        request += "\r\n"
+        
+        response = send_request(client, request)
+        client.close()
+        
+        if response:
+            # Check if the response contains "1" at the end of the body
+            response_parts = response.split('\r\n\r\n')
+            if len(response_parts) > 1 and response_parts[1].strip() == '1':
+                # Make a new GET request to get current content
+                client = create_client()
+                connect_to_server(client)
+                request = f"GET /{filename} HTTP/1.1\r\n"
+                request += "Host: localhost\r\n\r\n"
+                
+                response = send_request(client, request)
+                client.close()
+                
+                if response and '200 OK' in response:
+                    content = response.split('\r\n\r\n')[-1]
+                    timestamp = datetime.now()
+                    
+                    # Update cache
+                    new_cache = Cache(filename, content, timestamp)
+                    cache_list.remove(cached_entry)
+                    cache_list.append(new_cache)
+                    
+                    print("File modified - Updated cache with new content:")
+                    print(new_cache.content)
+                    return True
+                    
+        return False
+    except Exception as e:
+        print(f"Error checking modification time: {e}")
+        return True
+
 def main():
     client = create_client()
     connect_to_server(client)
+    cache_list = []
+    get_history = []
     
     while True:
         try:
-            # Get user input for HTTP method
             method = input("Enter HTTP method (GET/POST/PUT/DELETE) or 'exit' to quit: ").upper()
             
             if method == 'EXIT':
+                if get_history:
+                    print("\nGET Request History:")
+                    for req in get_history:
+                        print("-" * 50)
+                        print(req)
                 break
-                
-            if method not in ['GET', 'POST', 'PUT', 'DELETE']:
-                print("Invalid HTTP method. Please try again.")
-                continue
             
-            # Special handling for GET requests
             if method == 'GET':
-                file_type = input("Enter request type (html/txt/resource): ").lower()
-                if file_type in ['html', 'txt']:
-                    filename = input(f"Enter {file_type} file name (e.g., {'index.html' if file_type == 'html' else 'example.txt'}): ")
-                    path = f"/{filename}"
-                else:
-                    path = input("Enter resource path (e.g., /resource/1): ")
+                content_type = input("Enter content type (text/application/image/audio/video): ").lower()
+                if content_type not in ['text', 'application', 'image', 'audio', 'video']:
+                    print("Invalid content type")
+                    continue
+                
+                filename = input("Enter filename with extension: ")
+                path = f"/{filename}"
+                
+                if content_type == 'image':
+                    # Handle image files
+                    if not any(filename.endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp']):
+                        print("Invalid image format. Supported formats: png, jpg, jpeg, gif, svg, webp")
+                        continue
+                    
+                    # Create directory for downloaded files if it doesn't exist
+                    os.makedirs('downloads', exist_ok=True)
+                    
+                    request = f"GET {path} HTTP/1.1\r\n"
+                    request += "Host: localhost\r\n"
+                    request += "Accept: image/*\r\n\r\n"
+                    
+                    # Get binary response
+                    response = send_request(client, request, is_binary=True)
+                    if response:
+                        try:
+                            content = handle_binary_response(response)
+                            if content:
+                                # Save in downloads directory
+                                save_path = os.path.join('downloads', os.path.basename(filename))
+                                os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                                
+                                with open(save_path, 'wb') as f:
+                                    f.write(content)
+                                print(f"Image saved successfully as: {save_path}")
+                            else:
+                                print("Failed to process image response")
+                        except Exception as e:
+                            print(f"Error saving image: {e}")
+                    else:
+                        print("No response received from server")
+                    continue
+                
+                if content_type == 'audio':
+                    # Handle audio files
+                    if not any(filename.endswith(ext) for ext in ['.mp3', '.wav', '.ogg', '.mp4']):
+                        print("Invalid audio file format. Supported formats: mp3, wav, ogg, mp4")
+                        continue
+                    
+                    request = f"GET {path} HTTP/1.1\r\n"
+                    request += "Host: localhost\r\n"
+                    request += "Accept: audio/*\r\n\r\n"
+                    
+                    # Get binary response
+                    response = send_request(client, request, is_binary=True)
+                    if response:
+                        # Save audio file
+                        save_path = f"downloaded_{filename}"
+                        content = handle_audio_response(response)
+                        if content:
+                            with open(save_path, 'wb') as f:
+                                f.write(content)
+                            print(f"Audio file saved as: {save_path}")
+                    continue
+                
+                if content_type == 'text':
+                    # Handle text files with cache
+                    cached_entry = find_in_cache(cache_list, filename)
+                    if (cached_entry):
+                        print("Found in cache! Checking if modified...")
+                        if not check_modification_time(filename, cached_entry, cache_list):
+                            print("File not modified - Using cached version")
+                            print(cached_entry.content)
+                            continue
+                        continue
+                
+                request = f"GET {path} HTTP/1.1\r\n"
+                request += "Host: localhost\r\n"
+                request += f"Accept: {content_type}/*\r\n\r\n"
             else:
                 path = input("Enter path (e.g., /resource/1): ")
             
-            # Handle data for POST/PUT requests
             data = ""
             if method in ['POST', 'PUT']:
                 data = input("Enter JSON data (e.g., {\"name\": \"value\"}): ")
             
-            # Construct HTTP request
-            request = f"{method} {path} HTTP/1.1\r\n"
-            request += "Host: localhost\r\n"
+            if not (method == 'GET' and content_type == 'text' and cached_entry):
+                request = f"{method} {path} HTTP/1.1\r\n"
+                request += "Host: localhost\r\n"
             
             if data:
                 request += "Content-Type: application/json\r\n"
@@ -92,21 +314,33 @@ def main():
             else:
                 request += "\r\n"
             
-            # Create new socket for each request
             client = create_client()
             connect_to_server(client)
             
-            # Send request and get response
             response = send_request(client, request)
             if response:
+                if method == 'GET' and content_type == 'text':
+                    response_lines = response.split('\r\n')
+                    status_line = response_lines[0]
+                    
+                    if '200 OK' in status_line:
+                        content = response.split('\r\n\r\n')[-1]
+                        timestamp = datetime.now()
+                        
+                        new_cache = Cache(filename, content, timestamp)
+                        if cached_entry:
+                            cache_list.remove(cached_entry)
+                        cache_list.append(new_cache)
+                        
+                        get_history.append(new_cache)
+                        print("Content cached and added to history")
+                
                 print(f"\nServer response:\n{response}\n")
             
-            # Close the connection after each request
             client.close()
             
         except Exception as e:
             print(f"Error: {e}")
-            # Create new connection on error
             client = create_client()
             connect_to_server(client)
 
