@@ -29,6 +29,14 @@ import sys
 from datetime import datetime
 import os
 
+CLIENT_DIR = 'Client'
+DOWNLOADS_DIR = os.path.join(CLIENT_DIR, 'downloads')
+CACHE_DIR = os.path.join(CLIENT_DIR, 'cache')
+
+# Create necessary directories
+os.makedirs(DOWNLOADS_DIR, exist_ok=True)
+os.makedirs(CACHE_DIR, exist_ok=True)
+
 # Add this class to store GET request information
 class GetRequestInfo:
     def __init__(self, filename, content, timestamp):
@@ -210,10 +218,13 @@ def main():
             
             if method == 'EXIT':
                 if get_history:
-                    print("\nGET Request History:")
-                    for req in get_history:
-                        print("-" * 50)
-                        print(req)
+                    # Save history to Client directory
+                    history_path = os.path.join(CLIENT_DIR, 'history.txt')
+                    with open(history_path, 'w') as f:
+                        for req in get_history:
+                            f.write("-" * 50 + "\n")
+                            f.write(str(req) + "\n")
+                    print(f"\nGET Request History saved to {history_path}")
                 break
             
             if method == 'GET':
@@ -231,23 +242,17 @@ def main():
                         print("Invalid image format. Supported formats: png, jpg, jpeg, gif, svg, webp")
                         continue
                     
-                    # Create directory for downloaded files if it doesn't exist
-                    os.makedirs('downloads', exist_ok=True)
-                    
                     request = f"GET {path} HTTP/1.1\r\n"
                     request += "Host: localhost\r\n"
                     request += "Accept: image/*\r\n\r\n"
                     
-                    # Get binary response
                     response = send_request(client, request, is_binary=True)
                     if response:
                         try:
                             content = handle_binary_response(response)
                             if content:
-                                # Save in downloads directory
-                                save_path = os.path.join('downloads', os.path.basename(filename))
-                                os.makedirs(os.path.dirname(save_path), exist_ok=True)
-                                
+                                # Save in Client/downloads directory
+                                save_path = os.path.join(DOWNLOADS_DIR, os.path.basename(filename))
                                 with open(save_path, 'wb') as f:
                                     f.write(content)
                                 print(f"Image saved successfully as: {save_path}")
@@ -255,11 +260,9 @@ def main():
                                 print("Failed to process image response")
                         except Exception as e:
                             print(f"Error saving image: {e}")
-                    else:
-                        print("No response received from server")
                     continue
                 
-                if content_type == 'audio':
+                elif content_type == 'audio':
                     # Handle audio files
                     if not any(filename.endswith(ext) for ext in ['.mp3', '.wav', '.ogg', '.mp4']):
                         print("Invalid audio file format. Supported formats: mp3, wav, ogg, mp4")
@@ -269,34 +272,102 @@ def main():
                     request += "Host: localhost\r\n"
                     request += "Accept: audio/*\r\n\r\n"
                     
-                    # Get binary response
                     response = send_request(client, request, is_binary=True)
                     if response:
-                        # Save audio file
-                        save_path = f"downloaded_{filename}"
                         content = handle_audio_response(response)
                         if content:
+                            # Save in Client/downloads directory
+                            save_path = os.path.join(DOWNLOADS_DIR, f"downloaded_{filename}")
                             with open(save_path, 'wb') as f:
                                 f.write(content)
                             print(f"Audio file saved as: {save_path}")
                     continue
                 
-                if content_type == 'text':
+                elif content_type == 'text':
                     # Handle text files with cache
                     cached_entry = find_in_cache(cache_list, filename)
-                    if (cached_entry):
+                    if cached_entry:
                         print("Found in cache! Checking if modified...")
                         if not check_modification_time(filename, cached_entry, cache_list):
                             print("File not modified - Using cached version")
                             print(cached_entry.content)
+                            # Save cached content to downloads directory
+                            save_path = os.path.join(DOWNLOADS_DIR, filename)
+                            with open(save_path, 'w') as f:
+                                f.write(cached_entry.content)
+                            print(f"File saved from cache as: {save_path}")
                             continue
                         continue
                 
                 request = f"GET {path} HTTP/1.1\r\n"
                 request += "Host: localhost\r\n"
                 request += f"Accept: {content_type}/*\r\n\r\n"
-            else:
-                path = input("Enter path (e.g., /resource/1): ")
+                
+                client = create_client()
+                connect_to_server(client)
+                
+                response = send_request(client, request)
+                if response:
+                    if content_type == 'text':
+                        response_lines = response.split('\r\n')
+                        status_line = response_lines[0]
+                        
+                        if '200 OK' in status_line:
+                            content = response.split('\r\n\r\n')[-1]
+                            timestamp = datetime.now()
+                            
+                            # Save content to downloads directory
+                            save_path = os.path.join(DOWNLOADS_DIR, filename)
+                            with open(save_path, 'w') as f:
+                                f.write(content)
+                            print(f"File saved as: {save_path}")
+                            
+                            new_cache = Cache(filename, content, timestamp)
+                            if cached_entry:
+                                cache_list.remove(cached_entry)
+                            cache_list.append(new_cache)
+                            get_history.append(new_cache)
+                            print("Content cached and added to history")
+                    
+                    print(f"\nServer response:\n{response}\n")
+                
+                client.close()
+            
+            if method == 'PUT':
+                # Get file information
+                filename = input("Enter filename to upload: ")
+                path = f"/{filename}"
+                
+                try:
+                    # Read file content
+                    with open(filename, 'r') as f:
+                        content = f.read()
+                    
+                    # Create PUT request
+                    request = f"PUT {path} HTTP/1.1\r\n"
+                    request += "Host: localhost\r\n"
+                    request += "Content-Type: text/plain\r\n"
+                    request += f"Content-Length: {len(content)}\r\n"
+                    request += "\r\n"
+                    request += content
+                    
+                    # Send request
+                    client = create_client()
+                    connect_to_server(client)
+                    response = send_request(client, request)
+                    
+                    if response:
+                        print(f"\nServer response:\n{response}")
+                    
+                    client.close()
+                    
+                except FileNotFoundError:
+                    print(f"Error: File '{filename}' not found")
+                except Exception as e:
+                    print(f"Error uploading file: {e}")
+                continue
+            
+            path = input("Enter path (e.g., /resource/1): ")
             
             data = ""
             if method in ['POST', 'PUT']:

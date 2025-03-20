@@ -2,16 +2,14 @@
 
 ## Tareas sobre el sistema Cliente-Servidor
 
-[ ] **Añadir POST y PUT 6 PTS**  
+[ ] **Añadir POST 6 PTS**  
 
-  - Entender bien que hacen tanto PUT como POST
-  - Modificar la parte del cliente para que gestione bien las requests
-  - Modificar la parte del servidor para que ejecute como debería
+  - Implementar el metodo POST
 
 [ ] **Automated Testing 1.3 PTS** 
 
-  - Hecho y funciona correctamente sobre los comandos GET y DELETE
-  - Hacerlo con POST y PUT
+  - Corregir lo que está hecho con PUT, GET y DELETE
+  - Hacerlo con POST cuando se implemente
 
 [ ] **Gestión de loggin 2.3 PTS**
 
@@ -24,11 +22,12 @@
 
 [ ] **Sending and receiving multimedia files 1.3 PTS**
 
-  - Corregir para que en vez de html/txt ponga text/plain (Es lo mismo mandar un html que un txt)
   - Hacer que mande imagenes (JPEG, PNG, JPG...), audio, videos...
 
 
 [ ] **Conditional GET with cache 1.3 PTS**
 
-  - Guardar en el cliente en un vector los archivos simulando una CACHE (Y la fecha en la que se guarda cuando se hace el GET)
-  - En caso de pedir un archivo y que If-Modified-Since da true entonces se pasa el archivo en caso de que no se busca en "cache" y saca de "cache"
+  - Gestionar para que al hacer un GET guarde una copia en CACHE.
+  - Para que al hacer un GET sobre un archivo que está en CACHE (la carpeta) mire si ha cambiado con el get, en caso de haber cambiado que modifique el que   ya hay en CACHE y sino que muestre el de cache...
+  - En caso de pedir un archivo y que If-Modified-Since da true entonces se pasa el archivo en caso de que no se busca en "cache" y saca de "cache" (POSIBLE SOLUCIÓN)
+  - 

@@ -34,7 +34,11 @@ class SimpleHTTPServer:
     def __init__(self, host='localhost', port=8080):
         self.host = host
         self.port = port
-        self.resources = {}  # Diccionario en memoria para almacenar recursos dinámicos
+        self.resources = {}
+        self.server_dir = 'Server'  # Base directory for all server operations
+        
+        # Create server directory if it doesn't exist
+        os.makedirs(self.server_dir, exist_ok=True)
         
     def start(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -80,17 +84,10 @@ class SimpleHTTPServer:
             response = ""
             if method == "GET":
                 file_name = path[1:] if path.startswith('/') else path
-                # Check file type
-                if any(file_name.endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp']):
-                    print(f"Serving image file: {path}")
-                    response = self.serve_static(file_name, headers)
-                # Check if it's an audio file
-                elif any(file_name.endswith(ext) for ext in ['.mp3', '.wav', '.ogg', '.mp4']):
-                    print(f"Serving audio file: {path}")
-                    response = self.serve_static(file_name, headers)
-                elif any(path.endswith(ext) for ext in ['.html', '.txt', '.md']):
-                    print(f"Serving text file: {path}")
-                    response = self.serve_static(file_name, headers)
+                response = self.serve_static(file_name, headers)
+            elif method == "PUT":
+                file_name = path[1:] if path.startswith('/') else path
+                response = self.handle_put(file_name, headers, body)
             elif method == "DELETE":
                 file_name = path[1:] if path.startswith('/') else path
                 response = self.delete_file(file_name)
@@ -99,8 +96,11 @@ class SimpleHTTPServer:
             else:
                 response = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
             
-            print(f"Sending response:\n{response}")  # Debug print
-            client_socket.sendall(response.encode())
+            print(f"Sending response...")  # Debug print
+            if isinstance(response, str):
+                client_socket.sendall(response.encode())
+            else:
+                client_socket.sendall(response)
             
         except Exception as e:
             print(f"Error handling request: {e}")
@@ -148,39 +148,62 @@ class SimpleHTTPServer:
 
     def serve_static(self, file_path, headers=None):
         try:
-            # Normalize file path to prevent directory traversal
-            file_path = os.path.normpath(file_path)
+            # Join with server directory and normalize path
+            full_path = os.path.join(self.server_dir, os.path.normpath(file_path))
             
-            # Check if file exists and is within current directory
-            if not os.path.exists(file_path) or not os.path.isfile(file_path):
-                print(f"File not found or invalid: {file_path}")
-                return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
+            # Ensure file is within server directory (prevent directory traversal)
+            if not os.path.abspath(full_path).startswith(os.path.abspath(self.server_dir)):
+                print(f"Attempted directory traversal: {file_path}")
+                return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n".encode()
+            
+            if not os.path.exists(full_path) or not os.path.isfile(full_path):
+                print(f"File not found or invalid: {full_path}")
+                return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n".encode()
+            
+            # Get file's last modification time for If-Modified-Since
+            if headers and 'If-Modified-Since' in headers:
+                file_mtime = datetime.fromtimestamp(os.path.getmtime(full_path))
+                try:
+                    client_time = datetime.strptime(headers['If-Modified-Since'], '%Y-%m-%d %H:%M:%S')
+                    if file_mtime <= client_time:
+                        return "HTTP/1.1 304 Not Modified\r\nContent-Length: 0\r\n\r\n".encode()
+                    else:
+                        return "HTTP/1.1 200 OK\r\nContent-Length: 1\r\n\r\n1".encode()
+                except ValueError as e:
+                    print(f"Error parsing If-Modified-Since date: {e}")
             
             # Handle different content types
-            content_type = self.get_content_type(file_path)
+            content_type = self.get_content_type(full_path)
             
             # Read file in binary mode for all types
-            with open(file_path, 'rb') as file:
+            with open(full_path, 'rb') as file:
                 content = file.read()
             
-            response = "HTTP/1.1 200 OK\r\n"
-            response += f"Content-Type: {content_type}\r\n"
-            response += f"Content-Length: {len(content)}\r\n"
-            response += "Connection: close\r\n\r\n"
+            # Build response headers
+            response_headers = "HTTP/1.1 200 OK\r\n"
+            response_headers += f"Content-Type: {content_type}\r\n"
+            response_headers += f"Content-Length: {len(content)}\r\n"
+            response_headers += "Connection: close\r\n\r\n"
             
-            # Convert response headers to bytes and concatenate with content
-            return response.encode() + content
+            # Return response headers + content as bytes
+            return response_headers.encode() + content
                 
         except Exception as e:
             print(f"Error serving file: {e}")
-            return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+            return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n".encode()
     
     def delete_file(self, file_path):
         try:
-            print(f"Attempting to delete file: {file_path}")
-            import os
-            if os.path.exists(file_path):
-                os.remove(file_path)
+            # Join with server directory and normalize path
+            full_path = os.path.join(self.server_dir, os.path.normpath(file_path))
+            
+            # Ensure file is within server directory
+            if not os.path.abspath(full_path).startswith(os.path.abspath(self.server_dir)):
+                print(f"Attempted directory traversal: {file_path}")
+                return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n"
+            
+            if os.path.exists(full_path):
+                os.remove(full_path)
                 response = "HTTP/1.1 200 OK\r\n"
                 response += "Content-Type: text/plain\r\n"
                 message = f"File {file_path} was successfully deleted"
@@ -189,11 +212,40 @@ class SimpleHTTPServer:
                 response += message
                 return response
             else:
-                print(f"File not found: {file_path}")
+                print(f"File not found: {full_path}")
                 return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n"
         except Exception as e:
             print(f"Error deleting file: {e}")
             return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n"
+    
+    def handle_put(self, file_path, headers, content):
+        try:
+            # Normalize path and join with server directory
+            full_path = os.path.join(self.server_dir, os.path.basename(file_path))
+            
+            # Ensure file path is within server directory
+            if not os.path.abspath(full_path).startswith(os.path.abspath(self.server_dir)):
+                return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n".encode()
+            
+            # Write content to file
+            was_existing = os.path.exists(full_path)
+            with open(full_path, 'w') as file:
+                file.write(content)
+            
+            status = "200 OK" if was_existing else "201 Created"
+            print(f"File {file_path} {'updated' if was_existing else 'created'} in Server directory")
+            
+            response = f"HTTP/1.1 {status}\r\n"
+            response += "Content-Type: text/plain\r\n"
+            message = f"File {file_path} was successfully {'updated' if was_existing else 'created'}"
+            response += f"Content-Length: {len(message)}\r\n"
+            response += "\r\n"
+            response += message
+            return response.encode()
+            
+        except Exception as e:
+            print(f"Error handling PUT request: {e}")
+            return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n".encode()
     
     def handle_resource(self, method, path, body):
         resource_id = path.split("/")[-1]
