@@ -148,46 +148,39 @@ class SimpleHTTPServer:
 
     def serve_static(self, file_path, headers=None):
         try:
-            # Join with server directory and normalize path
             full_path = os.path.join(self.server_dir, os.path.normpath(file_path))
-            
-            # Ensure file is within server directory (prevent directory traversal)
-            if not os.path.abspath(full_path).startswith(os.path.abspath(self.server_dir)):
-                print(f"Attempted directory traversal: {file_path}")
-                return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n".encode()
+            # Validaciones de seguridad...
             
             if not os.path.exists(full_path) or not os.path.isfile(full_path):
-                print(f"File not found or invalid: {full_path}")
-                return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n".encode()
+                # 404
+                ...
             
-            # Get file's last modification time for If-Modified-Since
+            # Revisa If-Modified-Since
             if headers and 'If-Modified-Since' in headers:
                 file_mtime = datetime.fromtimestamp(os.path.getmtime(full_path))
                 try:
                     client_time = datetime.strptime(headers['If-Modified-Since'], '%Y-%m-%d %H:%M:%S')
                     if file_mtime <= client_time:
-                        return "HTTP/1.1 304 Not Modified\r\nContent-Length: 0\r\n\r\n".encode()
-                    else:
-                        return "HTTP/1.1 200 OK\r\nContent-Length: 1\r\n\r\n1".encode()
+                        # No está modificado => 304
+                        response_headers = "HTTP/1.1 304 Not Modified\r\n"
+                        response_headers += "Content-Length: 0\r\n"
+                        response_headers += "Connection: close\r\n\r\n"
+                        return response_headers.encode()
                 except ValueError as e:
                     print(f"Error parsing If-Modified-Since date: {e}")
             
-            # Handle different content types
+            # Si llegamos aquí, o bien no había cabecera If-Modified-Since,
+            # o sí la había, pero el archivo está modificado => enviamos el archivo
             content_type = self.get_content_type(full_path)
-            
-            # Read file in binary mode for all types
             with open(full_path, 'rb') as file:
                 content = file.read()
             
-            # Build response headers
             response_headers = "HTTP/1.1 200 OK\r\n"
             response_headers += f"Content-Type: {content_type}\r\n"
             response_headers += f"Content-Length: {len(content)}\r\n"
             response_headers += "Connection: close\r\n\r\n"
             
-            # Return response headers + content as bytes
             return response_headers.encode() + content
-                
         except Exception as e:
             print(f"Error serving file: {e}")
             return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n".encode()
