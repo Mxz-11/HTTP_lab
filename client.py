@@ -347,12 +347,15 @@ def main():
             
             if method == 'PUT':
                 # Get file information
-                filename = input("Enter filename to upload: ")
+                filename = input("Enter filename to upload (it must exist in Client/): ")
                 path = f"/{filename}"
                 
                 try:
+
+                    local_path = os.path.join(CLIENT_DIR, filename)
+
                     # Read file content
-                    with open(filename, 'r') as f:
+                    with open(local_path, 'r') as f:
                         content = f.read()
                     
                     # Create PUT request
