@@ -44,7 +44,7 @@ def run_test():
         print("\n1. Starting server...")
         server_process = subprocess.Popen([sys.executable, 'server.py'])
         time.sleep(1)  # Wait for server to start
-        print("✓ Server started successfully")
+        print("Server started successfully")
 
         # Create test files
         with open('Server/test1.html', 'w') as f:

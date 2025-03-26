@@ -44,7 +44,7 @@ class SimpleHTTPServer:
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # Add these two lines to allow port reuse
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        # server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         server_socket.bind((self.host, self.port))
         server_socket.listen(5)
         print(f"Servidor HTTP escuchando en {self.host}:{self.port}")
