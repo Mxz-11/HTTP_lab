@@ -232,12 +232,38 @@ def check_modification_time(filename, cached_entry, cache_list):
         print(f"Error checking modification time: {e}")
         return True
 
+def authenticate(client_socket):
+    # Authenticate a cliend and obtain a token
+    try:
+        response = client_socket.recv(1024).decode()
+        print(response, end="")
+        username = input()
+        client_socket.sendall(username.encode() + b"\n")
+
+        response = client_socket.recv(1024).decode()
+        print(response, end="")
+        password = input()
+        client_socket.sendall(password.encode() + b"\n")
+
+        response = client_socket.recv(1024).decode()
+        if "Token" in response:
+            print(response)
+            return response.split("Token: ")[1].strip()
+        else:
+            print("Authentication failed.")
+            return None
+    except Exception as e:
+        print(f"Error during authentication: {e}")
+        return None
 
 def main():
     client = create_client()
     connect_to_server(client)
     cache_list = []
     get_history = []
+    token = authenticate(client)
+    if not token:
+        return
     
     while True:
         try:
@@ -253,6 +279,10 @@ def main():
                             f.write(str(req) + "\n")
                     print(f"\nGET Request History saved to {history_path}")
                 break
+            path = input("Enter path (e.g., /resource/1): ")
+            request = f"{method} {path} HTTP/1.1\r\n"
+            request += f"Authorization: {token}\r\n"
+            request += "\r\n"
             
             if method == 'GET':
                 # 1) Preguntamos por el filename

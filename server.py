@@ -13,7 +13,7 @@ How to compile:
     3. Navigate to the directory where this script is located.
     4. Run the script with the following command:
         python3 server.py
-    
+
     Note: If you're using a virtual environment, activate it before running the script.
 
 Creation Date:
@@ -28,18 +28,57 @@ import socket
 import json
 import threading
 import os
+import hashlib
+import random
 from datetime import datetime
 
+
 class SimpleHTTPServer:
-    def __init__(self, host='localhost', port=8080):
+    def __init__(self, host="localhost", port=8080):
         self.host = host
         self.port = port
         self.resources = {}
-        self.server_dir = 'Server'  # Base directory for all server operations
-        
+        self.server_dir = "Server"  # Base directory for all server operations
+        self.tokens = {}
+        self.users_file = "./users.txt"
+
         # Create server directory if it doesn't exist
         os.makedirs(self.server_dir, exist_ok=True)
-        
+        self.load_users()
+
+    def load_users(self): 
+        # First Load users from the file
+        self.users = {}
+        if os.path.exists(self.users_file):
+            with open(self.users_file, 'r') as f:
+                for line in f:
+                    username, password = line.strip().split(':')
+                    self.users[username] = password
+
+    def authenticate(self, client_socket, addr):
+        # Authenticate a user and generate a token
+        try:
+            client_socket.sendall(b"Username: ")
+            username = client_socket.recv(1024).decode().strip()
+            client_socket.sendall(b"Password: ")
+            password = client_socket.recv(1024).decode().strip()
+
+            if username in self.users and self.users[username] == password:
+                token = hashlib.sha256(f"{random.random()}".encode()).hexdigest()
+                self.tokens[addr] = token
+                client_socket.sendall(f"Authenticated. Token: {token}\n".encode())
+                return True
+            else:
+                client_socket.sendall(b"Authentication failed.\n")
+                return False
+        except Exception as e:
+            print(f"Error during authentication: {e}")
+            return False
+
+    def validate_token(self, addr, headers):
+        token = headers.get("Authorization")
+        return self.tokens.get(addr) == token
+
     def start(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # Add these two lines to allow port reuse
@@ -56,8 +95,22 @@ class SimpleHTTPServer:
     
     def handle_request(self, client_socket):
         try:
+            # Authenticate the user
+            addr = client_socket.getpeername()
+            if addr not in self.tokens:
+                if not self.authenticate(client_socket, addr):
+                    client_socket.close()
+                    return
+
             request_data = client_socket.recv(1024).decode(errors='ignore')
             if not request_data:
+                return
+
+            request_lines = request_data.split("\r\n")
+            headers = {line.split(": ")[0]: line.split(": ")[1] for line in request_lines[1:] if ": " in line}
+
+            if not self.validate_token(addr, headers):
+                client_socket.sendall(b"HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\n\r\n")
                 return
             
             print(f"Received request:\n{request_data}")  # Debug print
