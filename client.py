@@ -127,42 +127,49 @@ def handle_binary_file(response):
 
 def send_request(client_socket, message, is_binary=False):
     try:
-        client_socket.send(message.encode('utf-8'))
-        
-        if not is_binary:
-            # Lectura habitual de texto
-            response = client_socket.recv(4096).decode('utf-8')
-            return response
+        client_socket.sendall(message.encode('utf-8'))
 
-        # Cuando is_binary == True
-        response = b""
+        # If not expecting binary, we do a single .recv(4096) and decode.
+        # This is basically your "text" approach, but you can tweak it if needed.
+        if not is_binary:
+            data = client_socket.recv(4096)
+            return data.decode('utf-8', errors='replace')
+
+        # For binary or indefinite length
+        response = b''
         content_length = None
         header_end = None
-
+        
         while True:
             chunk = client_socket.recv(4096)
             if not chunk:
+                # server closed the connection
                 break
+            
             response += chunk
 
-            # Si todavía no parseamos cabeceras, búscalas
+            # if we haven't parsed the header yet, do it
             if header_end is None:
                 header_end = response.find(b"\r\n\r\n")
                 if header_end != -1:
-                    # Separamos las cabeceras
+                    # parse the header
                     header_data = response[:header_end].decode('utf-8', errors='replace')
-                    lines = header_data.split("\r\n")
-                    # Buscamos Content-Length en todas las líneas
-                    for line in lines:
+                    # see if there's a content-length
+                    for line in header_data.split("\r\n"):
                         if line.lower().startswith("content-length:"):
                             parts = line.split(":", 1)
-                            content_length = int(parts[1].strip())
+                            try:
+                                content_length = int(parts[1].strip())
+                            except:
+                                content_length = None
                             break
-
-            # Si ya conocemos content_length, verificamos si ya recibimos todos los bytes del cuerpo
+            
+            # if we found content_length, check if we got all bytes
             if header_end is not None and content_length is not None:
-                body_len = len(response) - (header_end + 4)  # 4 = len("\r\n\r\n")
+                # body is everything after header_end + 4
+                body_len = len(response) - (header_end + 4)
                 if body_len >= content_length:
+                    # we've read the entire body
                     break
         
         return response
@@ -192,7 +199,7 @@ def check_modification_time(filename, cached_entry, cache_list):
         request += "Host: localhost\r\n"
         request += f"If-Modified-Since: {cached_entry.timestamp}\r\n"
         request += "\r\n"
-        
+        print(request)
         response = send_request(client, request)
         client.close()
         
@@ -234,8 +241,26 @@ def check_modification_time(filename, cached_entry, cache_list):
 
 
 def main():
+
+    custom_host = input("Enter server IP (blank for 'localhost'): ").strip()
+    if not custom_host:
+        custom_host = "localhost"
+
+    custom_port = input("Enter server port (blank for 8080): ").strip()
+    if not custom_port:
+        custom_port = "8080"
+    try:
+        custom_port = int(custom_port)
+    except ValueError:
+        custom_port = 8080  # fallback if user typed something invalid
+
+    base_path = input("Enter base path (blank for 'Client'): ").strip()
+    if not base_path:
+        base_path = "Client"
+    
     client = create_client()
-    connect_to_server(client)
+    connect_to_server(client, custom_host, custom_port)    
+    
     cache_list = []
     get_history = []
     
@@ -301,6 +326,7 @@ def main():
                 )
 
                 response = send_request(new_socket, request, is_binary=is_binary)
+                print("3")
                 new_socket.close()
 
                 if response:

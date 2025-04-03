@@ -2,7 +2,7 @@
     "people": [
       {
         "id": 1,
-        "name": "Laura Gómez",
+        "name": "UPDATED Gómez",
         "age": 28,
         "email": "laura.gomez@example.com",
         "is_active": true

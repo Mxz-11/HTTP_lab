@@ -7,10 +7,10 @@
 [ ] **Obligatorio 6 PTS**  
   - 🚢 HTTP Client
     - Send HTTP requests, in a way that:
-        - It is possible to choose the URL to which the request will be sent
-        - Use any available HTTP verb in the request (GET, HEAD, POST, PUT, DELETE)
+        - It is possible to choose the URL to which the request will be sent ✅
+        - Use any available HTTP verb in the request (GET, HEAD, POST, PUT, DELETE) ✅
         - Automatically add the necessary headers to the request so that it can be processed correctly ✅
-        - Add any other arbitrary header desired by the user
+        - Add any other arbitrary header desired by the user 
         - Specify the body of the request ✅
     - Receive and display on screen the response message of the sent request ✅
     - Inform about the request status ✅
@@ -25,9 +25,9 @@
             - An endpoint that allows viewing a list of resources
             - An endpoint that allows modifying a resource
             - An endpoint that allows deleting a resource ✅ (delete)
-        - Return the appropriate error codes if the endpoints are not invoked correctly
+        - Return the appropriate error codes if the endpoints are not invoked correctly ✅
         - Attend to multiple requests concurrently ✅
-        - Offer minimal configuration that allows choosing on which port the server starts 
+        - Offer minimal configuration that allows choosing on which port the server starts
         - It is not necessary for the resources to be persisted; they can be managed in memory 
 
 
@@ -51,4 +51,4 @@
 
 [X] **GUI for the client 1.3 PTS**
 
-  - Modificar el fichero prueba.ipynb para hacer la interfaz gráfica del cliente
+  - Modificar el fichero prueba.ipynb para actualizar la interfaz gráfica del cliente
