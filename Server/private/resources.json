@@ -1,0 +1,44 @@
+{
+    "gatos": [
+        {
+            "id": 1,
+            "nombre": "Maine Coon",
+            "origen": "Estados Unidos",
+            "tamaño": "Grande",
+            "curiosidad": "Es una de las razas más grandes del mundo felino doméstico."
+        },
+        {
+            "id": 2,
+            "nombre": "Siamés",
+            "origen": "Tailandia",
+            "tamaño": "Mediano",
+            "curiosidad": "Se le considera una raza real en su país de origen."
+        },
+        {
+            "id": 3,
+            "nombre": "Esfinge",
+            "origen": "Canadá",
+            "tamaño": "Mediano",
+            "curiosidad": "A pesar de no tener pelo, necesita baños frecuentes por su piel grasa."
+        },
+        {
+            "id": 4,
+            "nombre": "Bengalí",
+            "origen": "Estados Unidos",
+            "tamaño": "Grande",
+            "curiosidad": "Proviene del cruce entre gatos domésticos y gatos leopardo asiáticos."
+        },
+        {
+            "id": 5,
+            "nombre": "Juanlu",
+            "origen": "Estados Afganos",
+            "tamaño": "Standard"
+        },
+        {
+            "id": 6,
+            "nombre": "Siamés Actualizado",
+            "origen": "Tailandia",
+            "tamaño": "Mediano"
+        }
+    ]
+}

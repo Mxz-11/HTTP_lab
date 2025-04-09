@@ -6,6 +6,18 @@ Authors:
 
 Description:
     Este script gestiona el servidor del sistema cliente-servidor HTTP.
+    Se ha añadido lo siguiente:
+      - Restricción para impedir el acceso a la carpeta "private" (excepto para el endpoint /resources).
+      - Endpoint /resources que gestiona los recursos del servidor a partir del archivo:
+          Server/private/resources.json.
+        Para este endpoint:
+          - GET a /resources devuelve todo el contenido.
+          - GET a /resources/{categoria} devuelve la lista de objetos de esa categoría.
+          - GET a /resources/{categoria}/{id} devuelve el objeto cuyo campo "id" coincide.
+          - POST a /resources/{categoria} añade un nuevo objeto (se asigna un id nuevo).
+          - PUT a /resources/{categoria} reemplaza toda la categoría (se espera un array JSON).
+          - PUT a /resources/{categoria}/{id} actualiza el objeto con ese id.
+          - DELETE a /resources/{categoria}/{id} elimina el objeto con ese id.
 
 How to execute:
     1. Asegúrate de tener Python instalado (versión 3.12.4 o superior).
@@ -32,11 +44,19 @@ class SimpleHTTPServer:
     def __init__(self, host='localhost', port=8080):
         self.host = host
         self.port = port
-        self.resources = {}
+        self.resources = {}  # para el endpoint /resource (en memoria)
         self.server_dir = 'Server'  # Directorio base para operaciones del servidor
         
         # Crear el directorio del servidor si no existe
         os.makedirs(self.server_dir, exist_ok=True)
+        
+    def is_private(self, file_path):
+        """
+        Retorna True si file_path (camino relativo) apunta a la carpeta "private".
+        Se considera privado si el camino normalizado es "private" o comienza con "private" + os.sep.
+        """
+        normalized_path = os.path.normpath(file_path)
+        return normalized_path == "private" or normalized_path.startswith("private" + os.sep)
         
     def start(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -62,11 +82,9 @@ class SimpleHTTPServer:
                 return
             
             print(f"Received request:\n{request_data}")
-            
             request_lines = request_data.split("\r\n")
             request_line = request_lines[0]
             method, path, _ = request_line.split()
-            
             print(f"Method: {method}, Path: {path}")
             
             # Si se usa HEAD, la tratamos como GET para generar la respuesta y luego eliminamos el cuerpo.
@@ -90,22 +108,28 @@ class SimpleHTTPServer:
                     body += line + "\n"
             
             response = ""
-            # Si la ruta comienza con /resource se gestionan recursos en memoria
-            if path.startswith("/resource"):
+            # Priorizar el endpoint /resources (con s) para gestionar los recursos desde archivo.
+            if path.startswith("/resources"):
+                response = self.handle_resources(method, path, body, headers)
+            # Endpoint /resource (sin s) se mantiene para recursos en memoria.
+            elif path.startswith("/resource"):
                 response = self.handle_resource(method, path, body)
-            elif method == "GET":
-                file_name = path[1:] if path.startswith('/') else path
-                response = self.serve_static(file_name, headers)
-            elif method == "PUT":
-                file_name = path[1:] if path.startswith('/') else path
-                response = self.handle_put(file_name, headers, body)
-            elif method == "DELETE":
-                file_name = path[1:] if path.startswith('/') else path
-                response = self.delete_file(file_name)
             else:
-                response = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
+                # Extraer el nombre del archivo solicitado
+                file_name = path[1:] if path.startswith('/') else path
+                # Bloquear acceso a la carpeta "private"
+                if self.is_private(file_name):
+                    response = "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n"
+                elif method == "GET":
+                    response = self.serve_static(file_name, headers)
+                elif method == "PUT":
+                    response = self.handle_put(file_name, headers, body)
+                elif method == "DELETE":
+                    response = self.delete_file(file_name)
+                else:
+                    response = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
             
-            # Si es una solicitud HEAD, eliminamos el cuerpo y dejamos solo los encabezados
+            # Si es una solicitud HEAD, eliminamos el cuerpo y dejamos solo los encabezados.
             if head_request:
                 if isinstance(response, str):
                     sep = "\r\n\r\n"
@@ -141,27 +165,22 @@ class SimpleHTTPServer:
     def get_content_type(self, file_path):
         extension = file_path.split('.')[-1].lower()
         content_types = {
-            # Archivos de texto
             'txt': 'text/plain',
             'html': 'text/html',
             'css': 'text/css',
             'md': 'text/markdown',
-            # Archivos de aplicación
             'json': 'application/json',
             'pdf': 'application/pdf',
             'xml': 'application/xml',
-            # Imágenes
             'jpg': 'image/jpeg',
             'jpeg': 'image/jpeg',
             'png': 'image/png',
             'gif': 'image/gif',
             'svg': 'image/svg+xml',
             'webp': 'image/webp',
-            # Audio
             'mp3': 'audio/mpeg',
             'wav': 'audio/wav',
             'ogg': 'audio/ogg',
-            # Vídeo
             'mp4': 'video/mp4',
             'avi': 'video/x-msvideo'
         }
@@ -169,12 +188,12 @@ class SimpleHTTPServer:
 
     def serve_static(self, file_path, headers=None):
         try:
+            # Bloquear acceso a carpeta "private"
+            if self.is_private(file_path):
+                return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n".encode()
             full_path = os.path.join(self.server_dir, os.path.normpath(file_path))
-            
             if not os.path.exists(full_path) or not os.path.isfile(full_path):
                 return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n".encode()
-            
-            # Verificar el header If-Modified-Since
             if headers and 'If-Modified-Since' in headers:
                 file_mtime = datetime.fromtimestamp(os.path.getmtime(full_path))
                 try:
@@ -184,16 +203,13 @@ class SimpleHTTPServer:
                         return response_headers.encode()
                 except ValueError as e:
                     print(f"Error al parsear la fecha If-Modified-Since: {e}")
-            
             content_type = self.get_content_type(full_path)
             with open(full_path, 'rb') as file:
                 content = file.read()
-            
             response_headers = "HTTP/1.1 200 OK\r\n"
             response_headers += f"Content-Type: {content_type}\r\n"
             response_headers += f"Content-Length: {len(content)}\r\n"
             response_headers += "Connection: close\r\n\r\n"
-            
             return response_headers.encode() + content
         except Exception as e:
             print(f"Error serving file: {e}")
@@ -201,13 +217,12 @@ class SimpleHTTPServer:
     
     def delete_file(self, file_path):
         try:
+            if self.is_private(file_path):
+                return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n"
             full_path = os.path.join(self.server_dir, os.path.normpath(file_path))
-            
-            # Asegurarse de que se esté operando dentro del directorio del servidor
             if not os.path.abspath(full_path).startswith(os.path.abspath(self.server_dir)):
                 print(f"Intento de traversal de directorios: {file_path}")
                 return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n"
-            
             if os.path.exists(full_path):
                 os.remove(full_path)
                 response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n"
@@ -224,32 +239,31 @@ class SimpleHTTPServer:
     
     def handle_put(self, file_path, headers, content):
         try:
+            if self.is_private(file_path):
+                return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n".encode()
             full_path = os.path.join(self.server_dir, os.path.basename(file_path))
-            
             if not os.path.abspath(full_path).startswith(os.path.abspath(self.server_dir)):
                 return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n".encode()
-            
             was_existing = os.path.exists(full_path)
             with open(full_path, 'w') as file:
                 file.write(content)
-            
             status = "200 OK" if was_existing else "201 Created"
             print(f"Archivo {file_path} {'actualizado' if was_existing else 'creado'} en el directorio del servidor")
-            
             response = f"HTTP/1.1 {status}\r\n"
             response += "Content-Type: text/plain\r\n"
             message = f"File {file_path} was successfully {'updated' if was_existing else 'created'}"
             response += f"Content-Length: {len(message)}\r\n\r\n"
             response += message
             return response.encode()
-            
         except Exception as e:
             print(f"Error handling PUT request: {e}")
             return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n".encode()
     
     def handle_resource(self, method, path, body):
+        """
+        Manejador para el endpoint /resource (sin s) que opera con recursos en memoria.
+        """
         resource_id = path.split("/")[-1]
-        
         if method == "GET":
             return self.respond_with_json(self.resources)
         elif method == "POST":
@@ -276,11 +290,171 @@ class SimpleHTTPServer:
         return "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n"
     
     def respond_with_json(self, data):
-        json_data = json.dumps(data)
+        json_data = json.dumps(data, indent=4, ensure_ascii=False)
         response = f"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
         response += f"Content-Length: {len(json_data)}\r\n\r\n"
         response += json_data
         return response
+
+    def handle_resources(self, method, path, body, headers):
+        """
+        Manejador para el endpoint /resources.
+        Se espera que la ruta siga la estructura:
+        - /resources                             -> para GET se devuelve todo el contenido (todos los recursos)
+        - /resources/{categoria}                 -> para GET se devuelve la lista completa de la categoría
+        - /resources/{categoria}/{id}            -> para GET se devuelve el objeto cuyo "id" coincida
+        - POST a /resources/{categoria}           -> se añade un nuevo objeto (se asigna un id nuevo)
+        - PUT a /resources/{categoria}            -> reemplaza la lista completa para esa categoría (se espera array JSON)
+        - PUT a /resources/{categoria}/{id}       -> actualiza el objeto que coincide con el id
+        - DELETE a /resources/{categoria}/{id}    -> elimina el objeto que coincide con el id
+        Los datos se gestionan en el archivo: Server/private/resources.json.
+        """
+        # Ruta del archivo de recursos
+        res_file = os.path.join(self.server_dir, "private", "resources.json")
+        # Cargar contenido existente (o vacío si no existe)
+        if os.path.exists(res_file):
+            try:
+                with open(res_file, "r") as f:
+                    resources_data = json.load(f)
+            except Exception as e:
+                print("Error leyendo resources.json:", e)
+                resources_data = {}
+        else:
+            resources_data = {}
+
+        segments = path.strip("/").split("/")
+        # Si la ruta es exactamente "/resources"
+        if len(segments) == 1:
+            if method == "GET":
+                json_data = json.dumps(resources_data, indent=4)  # Formato bonito
+                return f"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {len(json_data)}\r\n\r\n{json_data}"
+            else:
+                return "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n"
+
+        # A partir de aquí, se espera que segments[1] sea la categoría (ej. "gatos")
+        category = segments[1]
+        # Si la categoría no existe y se trata de un POST se crea; para otros métodos se retorna 404.
+        if category not in resources_data:
+            if method == "POST":
+                resources_data[category] = []
+            else:
+                return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
+        category_data = resources_data.get(category, [])
+        
+        # Si la ruta es /resources/{categoria} (sin id)
+        if len(segments) == 2:
+            if method == "GET":
+                json_data = json.dumps(category_data, indent=4)
+                return f"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {len(json_data)}\r\n\r\n{json_data}"
+            elif method == "POST":
+                try:
+                    new_obj = json.loads(body)
+                    # Calcular nuevo ID
+                    new_id = 1
+                    if category_data:
+                        new_id = max([obj.get("id", 0) for obj in category_data] or [0]) + 1
+                    
+                    # Crear nuevo objeto con ID al principio
+                    ordered_obj = {"id": new_id}
+                    ordered_obj.update(new_obj)  # Añadir el resto de campos después del ID
+                    
+                    category_data.append(ordered_obj)
+                    resources_data[category] = category_data
+                    self.write_resources_file(res_file, resources_data)
+                    return "HTTP/1.1 201 Created\r\nContent-Length: 0\r\n\r\n"
+                except Exception as e:
+                    print("Error en POST /resources/{categoria}:", e)
+                    return "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n"
+            elif method == "PUT":
+                try:
+                    new_data = json.loads(body)
+                    if isinstance(new_data, list):
+                        # Si es una lista, reemplaza toda la categoría
+                        resources_data[category] = new_data
+                    else:
+                        # Si es un objeto individual, lo tratamos como POST
+                        new_id = 1
+                        if category_data:
+                            new_id = max([obj.get("id", 0) for obj in category_data] or [0]) + 1
+                        
+                        # Crear nuevo objeto con ID al principio
+                        ordered_obj = {"id": new_id}
+                        ordered_obj.update(new_data)  # Añadir el resto de campos después del ID
+                        
+                        category_data.append(ordered_obj)
+                        resources_data[category] = category_data
+                    
+                    self.write_resources_file(res_file, resources_data)
+                    return "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
+                except Exception as e:
+                    print("Error en PUT /resources/{categoria}:", e)
+                    return "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n"
+            else:
+                # DELETE no es válido sin un id
+                return "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n"
+        
+        # Si se proporciona un id: /resources/{categoria}/{id}
+        elif len(segments) == 3:
+            resource_id = segments[2]
+            if method == "GET":
+                found = None
+                for obj in category_data:
+                    if str(obj.get("id")) == resource_id:
+                        found = obj
+                        break
+                if found is None:
+                    return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
+                json_data = json.dumps(found, indent=4)
+                return f"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {len(json_data)}\r\n\r\n{json_data}"
+            elif method == "PUT":
+                try:
+                    # Cargar y validar el nuevo objeto
+                    new_obj = json.loads(body)
+                    
+                    # Buscar el objeto con el ID especificado
+                    updated = False
+                    for i, obj in enumerate(category_data):
+                        if str(obj.get("id")) == resource_id:
+                            # Mantener el ID original y actualizar el resto de campos
+                            ordered_obj = {"id": obj["id"]}
+                            ordered_obj.update(new_obj)  # Añadir el resto de campos después del ID
+                            
+                            category_data[i] = ordered_obj
+                            updated = True
+                            break
+                    
+                    if not updated:
+                        return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
+                    
+                    # Guardar los cambios
+                    resources_data[category] = category_data
+                    self.write_resources_file(res_file, resources_data)
+                    return "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
+                    
+                except Exception as e:
+                    print("Error en PUT /resources/{categoria}/{id}:", e)
+                    return "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n"
+            elif method == "DELETE":
+                initial_length = len(category_data)
+                category_data = [obj for obj in category_data if str(obj.get("id")) != resource_id]
+                if len(category_data) == initial_length:
+                    return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
+                resources_data[category] = category_data
+                self.write_resources_file(res_file, resources_data)
+                return "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
+            else:
+                return "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n"
+        else:
+            return "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n"
+
+
+    def write_resources_file(self, file_path, data):
+        try:
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, "w", encoding='utf-8') as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
+        except Exception as e:
+            print("Error escribiendo el archivo de recursos:", e)
 
 if __name__ == "__main__":
     try:

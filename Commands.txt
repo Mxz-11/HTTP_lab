@@ -1,0 +1,9 @@
+
+GET:
+– Si se solicita “/resources” se devuelve el contenido completo de resources.json.
+– Si se solicita “/resources/gatos” se devuelve la lista completa de esa categoría.
+– Si se solicita “/resources/gatos/{id}”  //sin las llaves xd
+
+POST:
+- Para crear se tiene que pasar en formato json
+

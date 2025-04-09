@@ -18,13 +18,14 @@
 
   - HTTP Server
     - The HTTP server must be able to do the following:
-      
         - Support, at least, the following endpoints, when they are correctly called (correct verb, correct headers...):
-            - An endpoint that returns static content (e.g., a static HTML file) ✅ (get)
-            - An endpoint that adds a new resource to the server according to the specified payload ✅ (put)
-            - An endpoint that allows viewing a list of resources
-            - An endpoint that allows modifying a resource ✅ (put)
-            - An endpoint that allows deleting a resource ✅ (delete)
+        *Gestionado todo con la carpeta /resources en el cliente*
+        *Si se quiere acceder, el cliente debe pedir a /resources*
+            - An endpoint that returns static content (e.g., a static HTML file) (get)
+            - An endpoint that adds a new resource to the server according to the specified payload (post)
+            - An endpoint that allows viewing a list of resources (get)
+            - An endpoint that allows modifying a resource (put)
+            - An endpoint that allows deleting a resource (delete)
         - Return the appropriate error codes if the endpoints are not invoked correctly ✅
         - Attend to multiple requests concurrently ✅
         - Offer minimal configuration that allows choosing on which port the server starts ✅
@@ -52,3 +53,5 @@
 [X] **GUI for the client 1.3 PTS**
 
   - Modificar el fichero prueba.ipynb para actualizar la interfaz gráfica del cliente
+
+[X] **Persistencia CRUD 0.5 PT**

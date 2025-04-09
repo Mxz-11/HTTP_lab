@@ -149,8 +149,15 @@ def main():
                     print(f"Error reading file: {e}")
                     body = ""
             else:
-                # Body manual
-                body = input("Enter the body content (blank if none): ")
+                # Body manual multilínea
+                print("Enter the body content (empty line to finish):")
+                body_lines = []
+                while True:
+                    line = input()
+                    if line == "":
+                        break
+                    body_lines.append(line)
+                body = '\n'.join(body_lines)
 
         # =========== CONSTRUIR REQUEST ===============
         # 1) Línea de petición
