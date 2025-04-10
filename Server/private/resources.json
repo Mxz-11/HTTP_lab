@@ -39,6 +39,12 @@
             "nombre": "Siamés Actualizado",
             "origen": "Tailandia",
             "tamaño": "Mediano"
+        },
+        {
+            "id": 7,
+            "nombre": "Siamés gatuno",
+            "origen": "Tailandia",
+            "tamaño": "Mediano"
         }
     ]
 }

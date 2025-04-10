@@ -1,10 +1,10 @@
-# NOTA ACTUAL: 3,9
+# NOTA ACTUAL: 6,5
 
 # Tareas Pendientes
 
 ## Tareas sobre el sistema Cliente-Servidor
 
-[ ] **Obligatorio 6 PTS**  
+[X] **Obligatorio 6 PTS**  
   - 🚢 HTTP Client
     - Send HTTP requests, in a way that:
         - It is possible to choose the URL to which the request will be sent ✅
@@ -21,11 +21,11 @@
         - Support, at least, the following endpoints, when they are correctly called (correct verb, correct headers...):
         *Gestionado todo con la carpeta /resources en el cliente*
         *Si se quiere acceder, el cliente debe pedir a /resources*
-            - An endpoint that returns static content (e.g., a static HTML file) (get)
-            - An endpoint that adds a new resource to the server according to the specified payload (post)
-            - An endpoint that allows viewing a list of resources (get)
-            - An endpoint that allows modifying a resource (put)
-            - An endpoint that allows deleting a resource (delete)
+            - An endpoint that returns static content (e.g., a static HTML file) (get)✅
+            - An endpoint that adds a new resource to the server according to the specified payload (post)✅
+            - An endpoint that allows viewing a list of resources (get)✅
+            - An endpoint that allows modifying a resource (put)✅
+            - An endpoint that allows deleting a resource (delete)✅
         - Return the appropriate error codes if the endpoints are not invoked correctly ✅
         - Attend to multiple requests concurrently ✅
         - Offer minimal configuration that allows choosing on which port the server starts ✅
@@ -46,11 +46,12 @@
     - El token se va pasando en la cabecera, haciendo que la comunicación funcione SIEMPRE y cuando el token sea correcto
     - El server sabe cual es el token porque para cada conexión lo guarda en un vector/diccionario siendo que guarda el par: addr (Es la IP y el puerto del cliente), token
 
-[X] **Sending and receiving multimedia files 1.3 PTS**
+[ ] **Sending and receiving multimedia files 1.3 PTS**
+    - GET funciona correctamente
 
-[X] **Conditional GET with cache 1.3 PTS**
+[ ] **Conditional GET with cache 1.3 PTS**
 
-[X] **GUI for the client 1.3 PTS**
+[ ] **GUI for the client 1.3 PTS**
 
   - Modificar el fichero prueba.ipynb para actualizar la interfaz gráfica del cliente
 

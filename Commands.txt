@@ -7,3 +7,18 @@ GET:
 POST:
 - Para crear se tiene que pasar en formato json
 
+DELETE:
+- Para borrar se tiene que borrar por id "resources/gatos/{id}
+
+PUT:
+- Para introducir algo nuevo "/resources/gatos" 
+- Para modificar uno nuevo por id "/resources/gatos/{id}", siendo que no hace falta modificar el id en la petición.
+
+
+EJEMPLO DE GATO:
+
+{
+    "nombre": "Torrente",
+    "origen": "Madrid",
+    "tamaño": "El más grande de España"
+}

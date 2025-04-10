@@ -77,47 +77,52 @@ class SimpleHTTPServer:
     
     def handle_request(self, client_socket):
         try:
-            request_data = client_socket.recv(1024).decode(errors='ignore')
-            if not request_data:
-                return
+            # Leer headers primero
+            request_data = b''
+            while b'\r\n\r\n' not in request_data:
+                chunk = client_socket.recv(4096)
+                if not chunk:
+                    return
+                request_data += chunk
+
+            # Separar headers y empezar a procesar el cuerpo
+            header_end = request_data.find(b'\r\n\r\n')
+            headers_raw = request_data[:header_end].decode('utf-8', errors='ignore')
             
-            print(f"Received request:\n{request_data}")
-            request_lines = request_data.split("\r\n")
+            # Parsear la primera línea y headers
+            request_lines = headers_raw.split('\r\n')
             request_line = request_lines[0]
             method, path, _ = request_line.split()
-            print(f"Method: {method}, Path: {path}")
             
-            # Si se usa HEAD, la tratamos como GET para generar la respuesta y luego eliminamos el cuerpo.
-            head_request = False
-            if method.upper() == "HEAD":
-                head_request = True
-                method = "GET"
-            
+            # Parsear headers
             headers = {}
-            body = ""
-            header_section = True
             for line in request_lines[1:]:
-                if line == "":
-                    header_section = False
-                    continue
-                if header_section:
-                    if ':' in line:
-                        key, value = line.split(":", 1)
-                        headers[key.strip()] = value.strip()
-                else:
-                    body += line + "\n"
-            
+                if ':' in line:
+                    key, value = line.split(':', 1)
+                    headers[key.strip()] = value.strip()
+
+            # Si hay Content-Length, leer el cuerpo
+            body = b''
+            if 'Content-Length' in headers:
+                content_length = int(headers['Content-Length'])
+                body = request_data[header_end + 4:]  # Agregar lo que ya leímos después de los headers
+                
+                # Seguir leyendo hasta completar el content-length
+                while len(body) < content_length:
+                    chunk = client_socket.recv(min(4096, content_length - len(body)))
+                    if not chunk:
+                        break
+                    body += chunk
+
+            print(f"Method: {method}, Path: {path}")
+
             response = ""
-            # Priorizar el endpoint /resources (con s) para gestionar los recursos desde archivo.
             if path.startswith("/resources"):
                 response = self.handle_resources(method, path, body, headers)
-            # Endpoint /resource (sin s) se mantiene para recursos en memoria.
             elif path.startswith("/resource"):
                 response = self.handle_resource(method, path, body)
             else:
-                # Extraer el nombre del archivo solicitado
                 file_name = path[1:] if path.startswith('/') else path
-                # Bloquear acceso a la carpeta "private"
                 if self.is_private(file_name):
                     response = "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n"
                 elif method == "GET":
@@ -128,26 +133,13 @@ class SimpleHTTPServer:
                     response = self.delete_file(file_name)
                 else:
                     response = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
-            
-            # Si es una solicitud HEAD, eliminamos el cuerpo y dejamos solo los encabezados.
-            if head_request:
-                if isinstance(response, str):
-                    sep = "\r\n\r\n"
-                    pos = response.find(sep)
-                    if pos != -1:
-                        response = response[:pos+len(sep)]
-                else:  # Si es bytes
-                    sep = b"\r\n\r\n"
-                    pos = response.find(sep)
-                    if pos != -1:
-                        response = response[:pos+len(sep)]
-            
+
             print("Sending response...")
             if isinstance(response, str):
                 client_socket.sendall(response.encode())
             else:
                 client_socket.sendall(response)
-            
+
         except Exception as e:
             print(f"Error handling request: {e}")
             error_response = "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n"
@@ -157,10 +149,9 @@ class SimpleHTTPServer:
                 pass
         finally:
             try:
-                client_socket.shutdown(socket.SHUT_RDWR)
+                client_socket.close()
             except:
                 pass
-            client_socket.close()
     
     def get_content_type(self, file_path):
         extension = file_path.split('.')[-1].lower()
@@ -241,20 +232,39 @@ class SimpleHTTPServer:
         try:
             if self.is_private(file_path):
                 return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n".encode()
+            
             full_path = os.path.join(self.server_dir, os.path.basename(file_path))
             if not os.path.abspath(full_path).startswith(os.path.abspath(self.server_dir)):
                 return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n".encode()
+
+            # Determinar si es contenido binario
+            content_type = headers.get('Content-Type', '').lower()
+            ext = file_path.split('.')[-1].lower() if '.' in file_path else ''
+            is_binary = (
+                any(t in content_type for t in ['image/', 'audio/', 'video/', 'application/octet-stream']) or
+                ext in ['png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav', 'mp4', 'avi']
+            )
+
+            # Escribir el archivo
+            mode = 'wb' if is_binary else 'w'
+            encoding = None if is_binary else 'utf-8'
+            
+            with open(full_path, mode) as f:
+                if isinstance(content, bytes) or is_binary:
+                    f.write(content)
+                else:
+                    f.write(content.decode('utf-8'))
+
             was_existing = os.path.exists(full_path)
-            with open(full_path, 'w') as file:
-                file.write(content)
             status = "200 OK" if was_existing else "201 Created"
-            print(f"Archivo {file_path} {'actualizado' if was_existing else 'creado'} en el directorio del servidor")
+            
             response = f"HTTP/1.1 {status}\r\n"
             response += "Content-Type: text/plain\r\n"
             message = f"File {file_path} was successfully {'updated' if was_existing else 'created'}"
             response += f"Content-Length: {len(message)}\r\n\r\n"
             response += message
             return response.encode()
+                
         except Exception as e:
             print(f"Error handling PUT request: {e}")
             return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n".encode()
