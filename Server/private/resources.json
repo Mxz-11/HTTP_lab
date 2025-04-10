@@ -46,5 +46,53 @@
             "origen": "Tailandia",
             "tamaño": "Mediano"
         }
+    ],
+        "perros": [
+        {
+            "id": 1,
+            "nombre": "Labrador Retriever",
+            "origen": "Canadá",
+            "tamaño": "Grande",
+            "curiosidad": "Es una de las razas más populares del mundo por su carácter amigable y entrenabilidad."
+        },
+        {
+            "id": 2,
+            "nombre": "Pastor Alemán",
+            "origen": "Alemania",
+            "tamaño": "Grande",
+            "curiosidad": "Se destaca como perro policía y de trabajo por su inteligencia y obediencia."
+        },
+        {
+            "id": 3,
+            "nombre": "Chihuahua",
+            "origen": "México",
+            "tamaño": "Pequeño",
+            "curiosidad": "Es una de las razas más pequeñas del mundo, pero con gran temperamento."
+        },
+        {
+            "id": 4,
+            "nombre": "Husky Siberiano",
+            "origen": "Rusia",
+            "tamaño": "Mediano",
+            "curiosidad": "Famoso por su resistencia al frío y su capacidad para tirar trineos en largas distancias."
+        },
+        {
+            "id": 5,
+            "nombre": "Bulldog Inglés",
+            "origen": "Reino Unido",
+            "tamaño": "Mediano"
+        },
+        {
+            "id": 6,
+            "nombre": "Beagle",
+            "origen": "Reino Unido",
+            "tamaño": "Pequeño"
+        },
+        {
+            "id": 7,
+            "nombre": "Dálmata",
+            "origen": "Croacia",
+            "tamaño": "Mediano"
+        }
     ]
 }
