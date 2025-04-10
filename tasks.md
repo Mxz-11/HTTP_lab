@@ -1,4 +1,4 @@
-# NOTA ACTUAL: 6,5
+# NOTA ACTUAL: 9,1
 
 # Tareas Pendientes
 
@@ -34,8 +34,6 @@
 
 [ ] **Automated Testing 1.3 PTS** 
 
-  - Corregir lo que está hecho con PUT, GET y DELETE
-  - Hacerlo con POST cuando se implemente
 
 [ ] **Gestión de loggin 2.3 PTS**
 
@@ -46,12 +44,11 @@
     - El token se va pasando en la cabecera, haciendo que la comunicación funcione SIEMPRE y cuando el token sea correcto
     - El server sabe cual es el token porque para cada conexión lo guarda en un vector/diccionario siendo que guarda el par: addr (Es la IP y el puerto del cliente), token
 
-[ ] **Sending and receiving multimedia files 1.3 PTS**
-    - GET funciona correctamente
+[X] **Sending and receiving multimedia files 1.3 PTS**
 
 [ ] **Conditional GET with cache 1.3 PTS**
 
-[ ] **GUI for the client 1.3 PTS**
+[X] **GUI for the client 1.3 PTS**
 
   - Modificar el fichero prueba.ipynb para actualizar la interfaz gráfica del cliente
 
