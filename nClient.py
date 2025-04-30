@@ -202,18 +202,29 @@ def main():
                         print("\n=== Response Headers ===\n")
                         print(headers)
                         
-                        if save_response and content:
-                            is_binary_content = content_type and any(t in content_type.lower() 
+                        if content:
+                            is_binary_content = content_type and any(t in content_type.lower()
                                 for t in ['image/', 'audio/', 'video/', 'application/octet-stream'])
-                            if save_response_content(content, save_filename, is_binary_content):
-                                print(f"\nContent saved to: {save_filename}")
-                                if not is_binary_content:
-                                    print("\n=== Content Preview ===\n")
-                                    try:
-                                        print(content.decode() if isinstance(content, bytes) else content)
-                                    except:
-                                        print("(Binary content)")
-                continue  # Skip the extra path prompt after GET
+                            
+                            # Si el usuario pidió guardarlo
+                            if save_response:
+                                if save_response_content(content, save_filename, is_binary_content):
+                                    print(f"\nContent saved to: {save_filename}")
+                                    if not is_binary_content:
+                                        print("\n=== Content Preview ===\n")
+                                        try:
+                                            print(content.decode() if isinstance(content, bytes) else content)
+                                        except:
+                                            print("(Binary content)")
+                            
+                            # Si no lo guardó y no es binario, mostrar el contenido
+                            elif not is_binary_content:
+                                print("\n=== Content Preview ===\n")
+                                try:
+                                    print(content.decode() if isinstance(content, bytes) else content)
+                                except:
+                                    print("(Binary content)")
+                    continue  # Skip the extra path prompt after GET
 
             path = input("Enter the resource path (blank => use base_path): ").strip()
             if not path:

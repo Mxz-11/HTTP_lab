@@ -301,10 +301,10 @@ class SimpleHTTPServer:
     
     def respond_with_json(self, data):
         json_data = json.dumps(data, indent=4, ensure_ascii=False)
-        response = f"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
-        response += f"Content-Length: {len(json_data)}\r\n\r\n"
-        response += json_data
-        return response
+        json_bytes = json_data.encode('utf-8')
+        response = f"HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\n"
+        response += f"Content-Length: {len(json_bytes)}\r\n\r\n"
+        return response.encode() + json_bytes
 
     def handle_resources(self, method, path, body, headers):
         """
@@ -354,8 +354,15 @@ class SimpleHTTPServer:
         # Si la ruta es /resources/{categoria} (sin id)
         if len(segments) == 2:
             if method == "GET":
-                json_data = json.dumps(category_data, indent=4)
-                return f"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {len(json_data)}\r\n\r\n{json_data}"
+                json_data = json.dumps(category_data, indent=4, ensure_ascii=False)
+                json_bytes = json_data.encode('utf-8')
+                return (
+                    b"HTTP/1.1 200 OK\r\n"
+                    b"Content-Type: application/json; charset=utf-8\r\n"
+                    + f"Content-Length: {len(json_bytes)}\r\n\r\n".encode()
+                    + json_bytes
+                )
+
             elif method == "POST":
                 try:
                     new_obj = json.loads(body)
