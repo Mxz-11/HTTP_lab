@@ -47,4 +47,4 @@ HTTP_lab/
 - [@Mxz11](https://github.com/Mxz-11)
 - [@Arksuga02](https://github.com/Arksuga02)
 - [@jrgim](https://github.com/jrgim)
-- TODO!! [@Alex]
+- [@lamari777](https://github.com/lamari777)
