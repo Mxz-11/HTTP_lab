@@ -12,15 +12,14 @@ This project implements an HTTP client-server system that supports basic HTTP pr
 ## 📂 Project Structure
 
 HTTP_lab/
-│
-├──[nServer.py](./nServer.py)          # HTTP main server
-├── [nClient.py](./nClient.py)          # HTTP interactive client
-├── [Server/](./Server)             # Folder with server files
-│   └── [private/resources.json](./Server/private/resources.json)
-├── a.jpg, a.gif, a.txt, index.html, test1.html  # Test files
-├── [prueba.ipynb](./prueba.ipynb)       # Grafical version
-├── [README.md](./README.md)
-└── tasks.md
+
+- [nServer.py](./nServer.py)          # HTTP main server
+- [nClient.py](./nClient.py)          # HTTP interactive client
+- [Server/](./Server)             # Folder with server files
+ └── [private/resources.json](./Server/private/resources.json)
+-  a.jpg, a.gif, a.txt, index.html, test1.html  # Test files
+- [prueba.ipynb](./prueba.ipynb)       # Grafical version
+- [README.md](./README.md)
 
 ## 💻 How to Run
 1. **Server:**
