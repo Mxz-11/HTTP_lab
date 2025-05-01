@@ -321,10 +321,12 @@ class SimpleHTTPServer:
         """
         # Ruta del archivo de recursos
         res_file = os.path.join(self.server_dir, "private", "resources.json")
+
         # Cargar contenido existente (o vacío si no existe)
         if os.path.exists(res_file):
             try:
-                with open(res_file, "r") as f:
+                # ← Aquí forzamos UTF-8 al leer
+                with open(res_file, "r", encoding="utf-8") as f:
                     resources_data = json.load(f)
             except Exception as e:
                 print("Error leyendo resources.json:", e)
@@ -468,7 +470,8 @@ class SimpleHTTPServer:
     def write_resources_file(self, file_path, data):
         try:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            with open(file_path, "w", encoding='utf-8') as f:
+            # Ya estaba usando UTF-8 al escribir, lo mantenemos
+            with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=4, ensure_ascii=False)
         except Exception as e:
             print("Error escribiendo el archivo de recursos:", e)

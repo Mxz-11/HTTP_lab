@@ -13,15 +13,15 @@ def connect_socket(sock, host="localhost", port=80):
     print(f"Connected (plain) to {host}:{port}")
 
 def send_request(sock, message, is_binary=False):
-    """Send HTTP request and read response"""
+    """Send HTTP request and read raw response bytes."""
     try:
-        # Send the request - now handling both str and bytes
+        # Send the request
         if isinstance(message, str):
             sock.sendall(message.encode('utf-8'))
         else:
-            sock.sendall(message)  # message is already bytes
+            sock.sendall(message)
 
-        # Read response
+        # Read full response as raw bytes
         response = b''
         while True:
             chunk = sock.recv(4096)
@@ -29,14 +29,12 @@ def send_request(sock, message, is_binary=False):
                 break
             response += chunk
 
-        # If not binary response, decode to string
-        if not is_binary:
-            return response.decode('utf-8', errors='replace').strip('b\'')
         return response
 
     except Exception as e:
         print(f"Error sending/receiving data: {e}")
         return None
+
 
 def handle_binary_file(response):
     """Handle any binary data from response (image, audio, video, etc.)"""

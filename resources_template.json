@@ -2,9 +2,10 @@
     "gatos": [
         {
             "id": 1,
-            "nombre": "Maine Moderno",
-            "origen": "USA",
-            "tamaño": "Gigante"
+            "nombre": "Maine Coon",
+            "origen": "Estados Unidos",
+            "tamaño": "Grande",
+            "curiosidad": "Es una de las razas más grandes del mundo felino doméstico."
         },
         {
             "id": 2,
@@ -44,15 +45,16 @@
             "nombre": "Siamés gatuno",
             "origen": "Tailandia",
             "tamaño": "Mediano"
-        },
-        {
-            "id": 8,
-            "nombre": "Angora",
-            "origen": "Turquía",
-            "tamaño": "Mediano"
         }
     ],
-    "perros": [
+        "perros": [
+        {
+            "id": 1,
+            "nombre": "Labrador Retriever",
+            "origen": "Canadá",
+            "tamaño": "Grande",
+            "curiosidad": "Es una de las razas más populares del mundo por su carácter amigable y entrenabilidad."
+        },
         {
             "id": 2,
             "nombre": "Pastor Alemán",
