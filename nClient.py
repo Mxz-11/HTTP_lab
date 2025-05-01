@@ -1,3 +1,4 @@
+import json
 import socket
 import sys
 from datetime import datetime
@@ -13,15 +14,15 @@ def connect_socket(sock, host="localhost", port=80):
     print(f"Connected (plain) to {host}:{port}")
 
 def send_request(sock, message, is_binary=False):
-    """Send HTTP request and read raw response bytes."""
+    """Send HTTP request and read response"""
     try:
-        # Send the request
+        # Send the request - now handling both str and bytes
         if isinstance(message, str):
             sock.sendall(message.encode('utf-8'))
         else:
-            sock.sendall(message)
+            sock.sendall(message)  # message is already bytes
 
-        # Read full response as raw bytes
+        # Read response
         response = b''
         while True:
             chunk = sock.recv(4096)
@@ -29,12 +30,14 @@ def send_request(sock, message, is_binary=False):
                 break
             response += chunk
 
+        # If not binary response, decode to string
+        if not is_binary:
+            return response.decode('utf-8', errors='replace').strip('b\'')
         return response
 
     except Exception as e:
         print(f"Error sending/receiving data: {e}")
         return None
-
 
 def handle_binary_file(response):
     """Handle any binary data from response (image, audio, video, etc.)"""
@@ -197,18 +200,36 @@ def main():
                     if headers:
                         print("\n=== Response Headers ===\n")
                         print(headers)
-                        
+
+                        # Determine if it's binary
+                        is_binary_content = content_type and any(
+                            t in content_type.lower()
+                            for t in ['image/', 'audio/', 'video/', 'application/octet-stream']
+                        )
+
+                        # Always print the body if it's text or JSON
+                        if not is_binary_content and content:
+                            print("\n=== Content Preview ===\n")
+                            try:
+                                # Try to decode content
+                                decoded_content = content.encode('ascii').decode('utf-8')
+
+                                # Try to parse as JSON
+                                try:
+                                    parsed_json = json.loads(decoded_content)
+                                    print(parsed_json)
+                                except json.JSONDecodeError:
+                                    # If it's not JSON, just print as plain text
+                                    print(decoded_content)
+
+                            except Exception as e:
+                                print(f"(Unable to decode content: {e})")
+
+                        # Save to file if requested
                         if save_response and content:
-                            is_binary_content = content_type and any(t in content_type.lower() 
-                                for t in ['image/', 'audio/', 'video/', 'application/octet-stream'])
                             if save_response_content(content, save_filename, is_binary_content):
                                 print(f"\nContent saved to: {save_filename}")
-                                if not is_binary_content:
-                                    print("\n=== Content Preview ===\n")
-                                    try:
-                                        print(content.decode() if isinstance(content, bytes) else content)
-                                    except:
-                                        print("(Binary content)")
+
                 continue  # Skip the extra path prompt after GET
 
             path = input("Enter the resource path (blank => use base_path): ").strip()

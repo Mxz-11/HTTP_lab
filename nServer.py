@@ -113,7 +113,6 @@ class SimpleHTTPServer:
                     if not chunk:
                         break
                     body += chunk
-
             print(f"Method: {method}, Path: {path}")
 
             response = ""
@@ -201,7 +200,8 @@ class SimpleHTTPServer:
             response_headers += f"Content-Type: {content_type}\r\n"
             response_headers += f"Content-Length: {len(content)}\r\n"
             response_headers += "Connection: close\r\n\r\n"
-            return response_headers.encode() + content
+            response_headers = response_headers.encode() + content
+            return response_headers
         except Exception as e:
             print(f"Error serving file: {e}")
             return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n".encode()
