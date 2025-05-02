@@ -45,9 +45,15 @@
             "nombre": "Siamés gatuno",
             "origen": "Tailandia",
             "tamaño": "Mediano"
+        },
+        {
+            "id": 8,
+            "nombre": "Siamés gatuno",
+            "origen": "Tailandia",
+            "tamaño": "Mediano"
         }
     ],
-        "perros": [
+    "perros": [
         {
             "id": 1,
             "nombre": "Labrador Retriever",

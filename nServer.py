@@ -119,8 +119,6 @@ class SimpleHTTPServer:
             response = ""
             if path.startswith("/resources"):
                 response = self.handle_resources(method, path, body, headers)
-            elif path.startswith("/resource"):
-                response = self.handle_resource(method, path, body)
             else:
                 file_name = path[1:] if path.startswith('/') else path
                 if self.is_private(file_name):
