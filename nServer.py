@@ -131,6 +131,13 @@ class SimpleHTTPServer:
                     response = self.handle_put(file_name, headers, body)
                 elif method == "DELETE":
                     response = self.delete_file(file_name)
+                elif method == "HEAD":
+                    # Solo se envían los headers, sin el cuerpo
+                    response = self.serve_static(file_name, headers)
+                    if isinstance(response, bytes):
+                        response = response.split(b'\r\n\r\n')[0] + b'\r\n\r\n'
+                    else:
+                        response = response.split('\r\n\r\n')[0] + '\r\n\r\n'
                 else:
                     response = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
 
