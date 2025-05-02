@@ -6,25 +6,13 @@ Authors:
 
 Description:
     Este script gestiona el servidor del sistema cliente-servidor HTTP.
-    Se ha añadido lo siguiente:
-      - Restricción para impedir el acceso a la carpeta "private" (excepto para el endpoint /resources).
-      - Endpoint /resources que gestiona los recursos del servidor a partir del archivo:
-          Server/private/resources.json.
-        Para este endpoint:
-          - GET a /resources devuelve todo el contenido.
-          - GET a /resources/{categoria} devuelve la lista de objetos de esa categoría.
-          - GET a /resources/{categoria}/{id} devuelve el objeto cuyo campo "id" coincide.
-          - POST a /resources/{categoria} añade un nuevo objeto (se asigna un id nuevo).
-          - PUT a /resources/{categoria} reemplaza toda la categoría (se espera un array JSON).
-          - PUT a /resources/{categoria}/{id} actualiza el objeto con ese id.
-          - DELETE a /resources/{categoria}/{id} elimina el objeto con ese id.
 
 How to execute:
     1. Asegúrate de tener Python instalado (versión 3.12.4 o superior).
     2. Abre una terminal o línea de comandos.
     3. Navega hasta el directorio donde se encuentre este script.
     4. Ejecuta el script con:
-           python3 server.py
+           python3 nServer.py
     Se le solicitará al usuario el puerto para iniciar el servidor.
 
 Creation Date:

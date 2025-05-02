@@ -1,3 +1,27 @@
+# -*- coding: utf-8 -*-
+"""
+Authors:
+    - Author Mxz11
+    - Añadir vuestros nombres aquí!
+
+Description:
+    Este script gestiona el cliente del sistema cliente-servidor HTTP.
+
+How to execute:
+    1. Asegúrate de tener Python instalado (versión 3.12.4 o superior).
+    2. Abre una terminal o línea de comandos.
+    3. Navega hasta el directorio donde se encuentre este script.
+    4. Ejecuta el script con:
+           python3 nClient.py
+    Se le solicitará al usuario el puerto para iniciar el servidor.
+
+Creation Date:
+    19/3/2025
+
+Last Modified:
+    19/3/2025
+"""
+
 import socket
 import sys
 from datetime import datetime
@@ -173,6 +197,7 @@ def main():
                 # Construct and send request
                 request = f"GET {path} HTTP/1.1\r\n"
                 request += f"Host: {raw_host}\r\n"
+                request += "Connection: close\r\n"
                 if is_binary:
                     request += "Accept: */*\r\n"
                 request += "\r\n"
@@ -225,6 +250,8 @@ def main():
             is_binary = False
             content_type = 'text/plain'  # default
 
+            skip_file = False
+
             if method in ["POST","PUT"] and path.startswith("/resources"):
                 parts = path.strip("/").split("/")
                 if method == "POST":
@@ -240,12 +267,7 @@ def main():
                     if len(parts) < 3:
                         if len(parts) == 1:
                             cat = input("Enter resource category: ").strip()
-                        else:
-                            cat = parts[1]
-                        rid = input("Enter resource ID to modify: ").strip()
-                        path = f"/resources/{cat}/{rid}"
-                    elif len(parts) == 3:
-                        pass
+                            path = f"/resources/{cat}"
                     else:
                         print("Invalid PUT path. Format: /resources/{category}/{id}")
                         continue
@@ -285,7 +307,7 @@ def main():
                             parts = [f"{method} {path} HTTP/1.1", f"Host: {raw_host}", f"Content-Type: multipart/form-data; boundary={boundary}", f"Content-Length: {len(body)}"] + custom_headers + [""]
                             request = "\r\n".join(parts).encode('utf-8') + b"\r\n" + body
                         else:
-                            parts = [f"{method} {path} HTTP/1.1", f"Host: {raw_host}", f"Content-Type: {content_type}", f"Content-Length: {len(body)}"] + custom_headers + [""]
+                            parts = [f"{method} {path} HTTP/1.1", f"Host: {raw_host}","Connection: close", f"Content-Type: {content_type}", f"Content-Length: {len(body)}"] + custom_headers + [""]
                             request = "\r\n".join(parts) + "\r\n" + body
                     except Exception as e:
                         print(f"Error reading file: {e}")
