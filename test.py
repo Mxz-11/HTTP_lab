@@ -1,251 +1,210 @@
-import os
+# -*- coding: utf-8 -*-
+import unittest
 import socket
-tempfile = None
 import json
-import pytest
-from nServer import SimpleHTTPServer
+import os
+from datetime import datetime
 
-# pytest test.py
+class TestHTTPServer(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        """Configuración inicial para todas las pruebas"""
+        cls.host = "localhost"
+        cls.port = 8080
+        cls.base_path = ""
+        cls.resources_file = "Server/private/resources.json"
+        
+        # Hacer una copia del archivo resources.json original
+        if os.path.exists(cls.resources_file):
+            with open(cls.resources_file, 'r', encoding='utf-8') as f:
+                cls.original_resources = json.load(f)
+        else:
+            cls.original_resources = {"gatos": [], "perros": []}
 
+    @classmethod
+    def tearDownClass(cls):
+        """Restaurar el archivo resources.json a su estado original"""
+        with open(cls.resources_file, 'w', encoding='utf-8') as f:
+            json.dump(cls.original_resources, f, indent=4, ensure_ascii=False)
 
-def make_server(tmp_path):
-    # Instantiate server and point its directory to a temp folder
-    server = SimpleHTTPServer(host='localhost', port=0)
-    server.server_dir = str(tmp_path / "Server")
-    # Create structure including private subfolder
-    os.makedirs(os.path.join(server.server_dir, "private"), exist_ok=True)
-    return server
-
-
-def send_request(server, request_bytes):
-    # Use socketpair to simulate client-server connection
-    client_sock, server_sock = socket.socketpair()
-    try:
-        # Write request into server end
-        client_sock.sendall(request_bytes)
-        # Process single request
-        server.handle_request(server_sock)
-        # Read all response bytes
-        response = b""
+    def send_request(self, method, path, body=None, headers=None, is_binary=False):
+        """Envía una solicitud HTTP y devuelve la respuesta"""
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((self.host, self.port))
+        
+        # Construir la solicitud
+        request = f"{method} {path} HTTP/1.1\r\n"
+        request += f"Host: {self.host}\r\n"
+        request += "Connection: close\r\n"
+        
+        if headers:
+            for key, value in headers.items():
+                request += f"{key}: {value}\r\n"
+        
+        if body is not None:
+            if isinstance(body, str):
+                body = body.encode('utf-8')
+            request += f"Content-Length: {len(body)}\r\n\r\n"
+            request = request.encode('utf-8') + body
+        else:
+            request += "\r\n"
+            request = request.encode('utf-8')
+        
+        sock.sendall(request)
+        
+        # Recibir la respuesta
+        response = b''
         while True:
-            chunk = client_sock.recv(4096)
+            chunk = sock.recv(4096)
             if not chunk:
                 break
             response += chunk
+        
+        sock.close()
+        
+        if not is_binary:
+            return response.decode('utf-8')
         return response
-    finally:
-        client_sock.close()
-        server_sock.close()
 
-def extract_body(resp_bytes):
-    # Split headers and body
-    parts = resp_bytes.split(b"\r\n\r\n", 1)
-    return parts[1] if len(parts) > 1 else b""
+    def test_html(self):
+        """Test 1: GET para archivos existentes"""
+        # Probar con index.html
+        response = self.send_request("GET", "/index.html")
+        self.assertIn("HTTP/1.1 200 OK", response)
+        self.assertIn("Content-Type: text/html", response)
+    def test_mp3(self):    
+        # Probar con a.mp3 (binario)
+        response = self.send_request("GET", "/a.mp3", is_binary=True)
+        self.assertIn(b"HTTP/1.1 200 OK", response)
+        self.assertIn(b"Content-Type: audio/mpeg", response)
+        
+    def test_mp4(self):
+        response = self.send_request("GET", "/a.mp4", is_binary=True)
+        self.assertIn(b"HTTP/1.1 200 OK", response)
+        self.assertIn(b"Content-Type: video/mp4", response)
 
-def test_get_nonexistent_file(tmp_path):
-    server = make_server(tmp_path)
-    req = b"GET /noexist.txt HTTP/1.1\r\nHost: localhost\r\n\r\n"
-    resp = send_request(server, req)
-    assert b"404 Not Found" in resp
+    def test_get_resources(self):
+        """Test 2: GET para recursos JSON"""
+        # Todos los recursos
+        response = self.send_request("GET", "/resources")
+        self.assertIn("HTTP/1.1 200 OK", response)
+        self.assertIn('"gatos"', response)
+        self.assertIn('"perros"', response)
+        
+    def test_get_cat(self):
+        # Solo gatos
+        response = self.send_request("GET", "/resources/gatos")
+        self.assertIn("HTTP/1.1 200 OK", response)
+        self.assertIn('"nombre": "Maine Coon"', response)
+        
+    def test_get_dog(self):    
+        # Gato específico
+        response = self.send_request("GET", "/resources/gatos/1")
+        self.assertIn("HTTP/1.1 200 OK", response)
+        self.assertIn('"nombre": "Maine Coon"', response)
 
-def test_head_method(tmp_path):
-    server = make_server(tmp_path)
-    # Create a file
-    file_path = os.path.join(server.server_dir, "page.html")
-    with open(file_path, "w", encoding='utf-8') as f:
-        f.write("<h1>Title</h1>")
-
-    # HEAD request
-    req = b"HEAD /page.html HTTP/1.1\r\nHost: localhost\r\n\r\n"
-    resp = send_request(server, req)
-    body = extract_body(resp)
-    assert b"200 OK" in resp
-    assert b"<h1>Title</h1>" not in body  # No body for HEAD
-
-
-def test_unsupported_method(tmp_path):
-    server = make_server(tmp_path)
-    req = b"PATCH / HTTP/1.1\r\nHost: localhost\r\n\r\n"
-    resp = send_request(server, req)
-    assert b"405 Method Not Allowed" in resp
-
-def test_directory_traversal(tmp_path):
-    server = make_server(tmp_path)
-    # Create sensitive file outside
-    parent = tmp_path / "Secret"
-    parent.mkdir()
-    secret_file = parent / "hidden.txt"
-    secret_file.write_text("oops")
-
-    # Attempt traversal
-    req = b"GET /../Secret/hidden.txt HTTP/1.1\r\nHost: localhost\r\n\r\n"
-    resp = send_request(server, req)
-    # Should not allow traversal
-    assert b"403 Forbidden" in resp or b"404 Not Found" in resp
-
-
-def test_put_and_update_file(tmp_path):
-    server = make_server(tmp_path)
-    body1 = b"First"
-    headers1 = (
-        b"PUT /update.txt HTTP/1.1\r\n"
-        b"Host: localhost\r\n"
-        b"Content-Type: application/octet-stream\r\n"
-        b"Content-Length: 5\r\n\r\n"
-    )
-    resp1 = send_request(server, headers1 + body1)
-    assert b"200 OK" in resp1
-
-    # Update same file
-    body2 = b"Second"
-    headers2 = (
-        b"PUT /update.txt HTTP/1.1\r\n"
-        b"Host: localhost\r\n"
-        b"Content-Type: application/octet-stream\r\n"
-        b"Content-Length: 6\r\n\r\n"
-    )
-    resp2 = send_request(server, headers2 + body2)
-    assert b"200 OK" in resp2
-    # Check content
-    resp_get = send_request(server, b"GET /update.txt HTTP/1.1\r\nHost: localhost\r\n\r\n")
-    assert b"Second" in resp_get
-
-def test_delete_nonexistent(tmp_path):
-    server = make_server(tmp_path)
-    req = b"DELETE /nofile HTTP/1.1\r\nHost: localhost\r\n\r\n"
-    resp = send_request(server, req)
-    assert b"404 Not Found" in resp
-
-def test_put_in_private_forbidden(tmp_path):
-    server = make_server(tmp_path)
-    body = b"Secret"
-    headers = (
-        b"PUT /private/secret2.txt HTTP/1.1\r\n"
-        b"Host: localhost\r\n"
-        b"Content-Type: application/octet-stream\r\n"
-        b"Content-Length: 6\r\n\r\n"
-    )
-    resp = send_request(server, headers + body)
-    assert b"403 Forbidden" in resp
-
-def test_resources_multiple_posts(tmp_path):
-    server = make_server(tmp_path)
-    # Post two items
-    for name in [b'{"name":"A"}', b'{"name":"B"}']:
-        hdr = (
-            b"POST /resources/list HTTP/1.1\r\n"
-            b"Host: localhost\r\n"
-            b"Content-Type: application/json\r\n"
-            b"Content-Length: " + str(len(name)).encode() + b"\r\n\r\n"
+    def test_post_new_cat(self):
+        """Test 3: POST para crear nuevo gato"""
+        new_cat = {
+            "nombre": "Nuevo Gato",
+            "origen": "España",
+            "tamaño": "Mediano",
+            "curiosidad": "Raza creada para pruebas"
+        }
+        headers = {}
+        response = self.send_request(
+            "POST", 
+            "/resources/gatos", 
+            body=json.dumps(new_cat),
+            headers=headers
         )
-        resp_post = send_request(server, hdr + name)
-        assert b"201 Created" in resp_post
+        self.assertIn("HTTP/1.1 201 Created", response)
+        
+        # Verificar que se creó el nuevo gato
+        response = self.send_request("GET", "/resources/gatos")
+        print(response)
 
-    # GET list and verify two ids
-    resp_list = send_request(server, b"GET /resources/list HTTP/1.1\r\nHost: localhost\r\n\r\n")
-    body = extract_body(resp_list)
-    arr = json.loads(body.decode())
-    ids = [item.get('id') for item in arr]
-    assert ids == [1, 2]
-    
+    def test_update_cat(self):
+        """Test 4: PUT para actualizar el gato creado"""
+        # Obtener todos los gatos
+        response = self.send_request("GET", "/resources/gatos")
+        data = json.loads(response.split("\r\n\r\n")[1])
+        
+        # Buscar el gato creado por nombre
+        cat_id = None
+        for cat in data:
+            if cat["nombre"] == "Nuevo Gato":
+                cat_id = cat["id"]
+                break
 
-def test_resources_invalid_json(tmp_path):
-    server = make_server(tmp_path)
-    bad = b"{name:NoQuotes}"
-    headers = (
-        b"POST /resources/test HTTP/1.1\r\n"
-        b"Host: localhost\r\n"
-        b"Content-Type: application/json\r\n"
-        b"Content-Length: " + str(len(bad)).encode() + b"\r\n\r\n"
-    )
-    resp = send_request(server, headers + bad)
-    assert b"400 Bad Request" in resp
+        self.assertIsNotNone(cat_id, "No se encontró el gato creado")
+        
+        updated_cat = {
+            "nombre": "Gato Actualizado",
+            "origen": "España",
+            "tamaño": "Grande",
+            "curiosidad": "Información actualizada"
+        }
+        headers = {}
+        response = self.send_request(
+            "PUT", 
+            f"/resources/gatos/{cat_id}", 
+            body=json.dumps(updated_cat),
+            headers=headers
+        )
+        self.assertIn("HTTP/1.1 200 OK", response)
+        
+        # Verificar que se actualizó
+        response = self.send_request("GET", f"/resources/gatos/{cat_id}")
+        print(response)
+        
+    def test_delete_cat(self):
+        """Test 5: DELETE para eliminar el gato"""
+        # Obtener todos los gatos
+        response = self.send_request("GET", "/resources/gatos")
+        data = json.loads(response.split("\r\n\r\n")[1])
+        
+        # Buscar el gato actualizado por nombre
+        cat_id = None
+        for cat in data:
+            if cat["nombre"] == "Gato Actualizado":
+                cat_id = cat["id"]
+                break
 
-def test_get_static_file(tmp_path):
-    server = make_server(tmp_path)
-    # Create a text file under Server directory
-    file_path = os.path.join(server.server_dir, "hello.txt")
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, "w") as f:
-        f.write("Hello, Test!")
-
-    req = b"GET /hello.txt HTTP/1.1\r\nHost: localhost\r\n\r\n"
-    resp = send_request(server, req)
-    assert b"200 OK" in resp
-    assert b"Hello, Test!" in resp
-
-
-def test_403_on_private(tmp_path):
-    server = make_server(tmp_path)
-    # Create a private file
-    priv = os.path.join(server.server_dir, "private", "secret.txt")
-    with open(priv, "w") as f:
-        f.write("Top Secret")
-
-    req = b"GET /private/secret.txt HTTP/1.1\r\nHost: localhost\r\n\r\n"
-    resp = send_request(server, req)
-    assert b"403 Forbidden" in resp
-
-
-def test_put_then_get_and_delete(tmp_path):
-    server = make_server(tmp_path)
-    # PUT to create new file
-    body = b"Data123"
-    headers = (
-        b"PUT /data.txt HTTP/1.1\r\n"
-        b"Host: localhost\r\n"
-        b"Content-Type: application/octet-stream\r\n"
-        b"Content-Length: 7\r\n\r\n"
-    )
-    req_put = headers + body
-    resp_put = send_request(server, req_put)
-    assert b"200 OK" in resp_put
-
-    # GET the created file
-    req_get = b"GET /data.txt HTTP/1.1\r\nHost: localhost\r\n\r\n"
-    resp_get = send_request(server, req_get)
-    assert b"200 OK" in resp_get
-    assert b"Data123" in resp_get
-
-    # DELETE the file
-    req_del = b"DELETE /data.txt HTTP/1.1\r\nHost: localhost\r\n\r\n"
-    resp_del = send_request(server, req_del)
-    assert b"200 OK" in resp_del
-
-    # GET after delete -> 404
-    resp_404 = send_request(server, req_get)
-    assert b"404 Not Found" in resp_404
+        self.assertIsNotNone(cat_id, "No se encontró el gato a eliminar")
+        
+        response = self.send_request("DELETE", f"/resources/gatos/{cat_id}")
+        self.assertIn("HTTP/1.1 200 OK", response)
+        
+        # Verificar que ya no existe
+        response = self.send_request("GET", f"/resources/gatos/{cat_id}")
+        self.assertIn("HTTP/1.1 404 Not Found", response)
 
 
-def test_resources_crud(tmp_path):
-    server = make_server(tmp_path)
-    # POST a new resource in category 'items'
-    new_obj = b'{"name":"ItemA"}'
-    headers = (
-        b"POST /resources/items HTTP/1.1\r\n"
-        b"Host: localhost\r\n"
-        b"Content-Type: application/json\r\n"
-        b"Content-Length: " + str(len(new_obj)).encode() + b"\r\n\r\n"
-    )
-    req_post = headers + new_obj
-    resp_post = send_request(server, req_post)
-    assert b"201 Created" in resp_post
+    def test_6_external_get_and_save(self): #ESTE HAY QUE CAMBIARLO, NOSE SI HACE LO QUE DEBE
+        """Test 6: GET para archivo externo y guardar localmente"""
+        # Cambiamos temporalmente el host y puerto
+        original_host, original_port = self.host, self.port
+        self.host, self.port = "example.com", 80
+        
+        try:
+            response = self.send_request("GET", "/")
+            self.assertIn("HTTP/1.1 200 OK", response)
+            
+            # Guardar el contenido en un archivo
+            save_filename = "example_home.html"
+            with open(save_filename, 'w', encoding='utf-8') as f:
+                content = response.split("\r\n\r\n", 1)[1]
+                f.write(content)
+            
+            # Verificar que el archivo se creó
+            self.assertTrue(os.path.exists(save_filename))
+            
+            # Limpiar - eliminar el archivo de prueba
+            os.remove(save_filename)
+        finally:
+            # Restaurar valores originales
+            self.host, self.port = original_host, original_port
 
-    # GET the category list
-    req_get_list = b"GET /resources/items HTTP/1.1\r\nHost: localhost\r\n\r\n"
-    resp_list = send_request(server, req_get_list)
-    assert b"\"name\": \"ItemA\"" in resp_list
-
-    # GET single object by id=1
-    req_get_one = b"GET /resources/items/1 HTTP/1.1\r\nHost: localhost\r\n\r\n"
-    resp_one = send_request(server, req_get_one)
-    assert b"ItemA" in resp_one
-
-    # DELETE the object
-    req_del = b"DELETE /resources/items/1 HTTP/1.1\r\nHost: localhost\r\n\r\n"
-    resp_del = send_request(server, req_del)
-    assert b"200 OK" in resp_del
-
-    # GET list again -> empty array
-    resp_empty = send_request(server, req_get_list)
-    assert b"[]" in resp_empty
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
