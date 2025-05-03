@@ -116,7 +116,7 @@ class SimpleHTTPServer:
                         response = "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n"
                 elif method == "GET":
                     response = self.serve_static(file_name, headers)
-                elif method == "PUT":
+                elif method in ("PUT", "POST"):
                     response = self.handle_put(file_name, headers, body)
                 elif method == "DELETE":
                     response = self.delete_file(file_name)
