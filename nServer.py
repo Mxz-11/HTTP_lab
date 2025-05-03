@@ -110,7 +110,10 @@ class SimpleHTTPServer:
             else:
                 file_name = path[1:] if path.startswith('/') else path
                 if self.is_private(file_name):
-                    response = "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n"
+                    if method == "HEAD" and file_name.startswith("/resources"):
+                        response = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
+                    else:
+                        response = "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n"
                 elif method == "GET":
                     response = self.serve_static(file_name, headers)
                 elif method == "PUT":
@@ -325,7 +328,7 @@ class SimpleHTTPServer:
         else:
             resources_data = {}
 
-        segments = path.strip("/").split("/")
+        segments = [s for s in path.strip("/").split("/") if s]
         # Si la ruta es exactamente "/resources"
         if len(segments) == 1:
             if method == "GET":
@@ -354,6 +357,14 @@ class SimpleHTTPServer:
                     b"Content-Type: application/json; charset=utf-8\r\n"
                     + f"Content-Length: {len(json_bytes)}\r\n\r\n".encode()
                     + json_bytes
+                )
+            elif method == "HEAD":
+                json_data = json.dumps(category_data, indent=4, ensure_ascii=False)
+                json_bytes = json_data.encode('utf-8')
+                return (
+                    b"HTTP/1.1 200 OK\r\n"
+                    b"Content-Type: application/json; charset=utf-8\r\n"
+                    + f"Content-Length: {len(json_bytes)}\r\n\r\n".encode()
                 )
 
             elif method == "POST":
