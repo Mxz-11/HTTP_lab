@@ -63,6 +63,24 @@ class SimpleHTTPServer:
             print(f"Conexión entrante de {addr}")
             threading.Thread(target=self.handle_request, args=(client_socket,)).start()
     
+    def log_full_request(self, addr, raw_request_data):
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_path = os.path.join(self.server_dir, "server.log")
+        
+        try:
+            request_text = raw_request_data.decode("utf-8", errors="replace")
+            lines = request_text.replace('\r\n', '\n').split('\n')
+            cleaned_lines = [line for line in lines if line.strip() != '']
+            cleaned_text = '\n'.join(cleaned_lines)
+        except Exception as e:
+            cleaned_text = f"(Error decoding request: {e})"
+        
+        with open(log_path, "a", encoding="utf-8") as log_file:
+            log_file.write(f"\n[{timestamp}] {addr[0]}:{addr[1]} - Request received:\n")
+            log_file.write(cleaned_text)
+            log_file.write("\n" + "-" * 60 + "\n")
+
+    
     def handle_request(self, client_socket):
         try:
             # Leer headers primero
@@ -101,6 +119,9 @@ class SimpleHTTPServer:
                     if not chunk:
                         break
                     body += chunk
+                self.log_full_request(client_socket.getpeername(), request_data[:header_end + 4] + body)
+            else:
+                self.log_full_request(client_socket.getpeername(), request_data)
 
             print(f"Method: {method}, Path: {path}")
 
