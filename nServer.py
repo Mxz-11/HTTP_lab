@@ -2,7 +2,9 @@
 """
 Authors:
     - Author Mxz11
-    - Añadir vuestros nombres aquí!
+    - Jorge Giménez
+    - Alex Langarita
+    - Arkaitz Subías
 
 Description:
     Este script gestiona el servidor del sistema cliente-servidor HTTP.
@@ -62,6 +64,33 @@ class SimpleHTTPServer:
             client_socket, addr = server_socket.accept()
             print(f"Conexión entrante de {addr}")
             threading.Thread(target=self.handle_request, args=(client_socket,)).start()
+
+    def log_full_request(self, addr, headers_raw, body, content_type):
+        timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+        ip, port = addr
+        log_path = os.path.join(self.server_dir, "server.log")
+        
+        request_lines = [line.strip() for line in headers_raw.strip().splitlines() if line.strip()]
+        
+        request_line = request_lines[0] if request_lines else "<empty request>"
+        
+        headers_clean = "\n".join(request_lines[1:])
+
+        try:
+            if content_type.startswith("text") or content_type == "application/json":
+                body_display = body.decode("utf-8", errors="replace")
+            else:
+                body_display = "<binary data>"
+        except Exception:
+            body_display = "<undecodable body>"
+
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(f"{timestamp} {ip}:{port} - Request received:\n")
+            f.write(f"{request_line}\n")
+            f.write(headers_clean + "\n")
+            f.write("-" * 60 + "\n")
+            f.write(body_display + "\n")
+            f.write("=" * 60 + "\n")
     
     def handle_request(self, client_socket):
         try:
@@ -101,7 +130,8 @@ class SimpleHTTPServer:
                     if not chunk:
                         break
                     body += chunk
-
+            self.log_full_request(client_socket.getpeername(), headers_raw, body, headers.get("Content-Type", ""))
+            
             print(f"Method: {method}, Path: {path}")
 
             response = ""
