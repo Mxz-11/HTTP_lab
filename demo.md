@@ -263,7 +263,18 @@ Enter local filename (relative path): a.gif
 ```
 
 **Logging**
-FALTA POR ESCRIBIR (ARKA)
+
+We have added a function (log_full_request) and it's called after the request_data, headers and body have been processed. We store the IP addres, port of the client and the timestamp of when the request is received. We store all this data in a server.log file inside the private folder of the server, and it looks like this:
+```
+[2025-05-04 14:01:21] 127.0.0.1:13261 - Request received:
+GET /a.gif HTTP/1.1
+Host: localhost
+Connection: close
+Accept: */*
+------------------------------------------------------------
+
+============================================================
+```
 
 **Automated Testing**
 
