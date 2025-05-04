@@ -267,7 +267,47 @@ FALTA POR ESCRIBIR (ARKA)
 
 **Automated Testing**
 
-FALTA POR ESCRIBIR (JORGE O ALEX)
+To ensure the correct functionality of the HTTP server, we have implemented automated tests using the `unittest` framework in Python. These tests are located in the `test.py` file and cover various aspects of the server's behavior.
+
+**How to execute `test.py`**
+
+1. **Prerequisites**:
+   - Ensure that the HTTP server (`nServer.py`) is running before executing the tests. The tests require the server to be active to validate its responses.
+   - Verify that the server is running on the default port `8080`. If a different port is used, update the port in the `test.py` file.
+
+2. **Steps to execute**:
+   - Open a terminal.
+   - Navigate to the directory where the `test.py` file is located.
+   - Run the following command:
+     ```bash
+     python -m unittest test.py
+     ```
+   - This will execute all the tests defined in the file and display the results in the terminal.
+
+**Tests included in [test.py](./test.py)**
+
+- **Static content tests**:
+  - test_html: Verifies that the server can serve a static HTML file (`index.html`).
+  - test_mp3 and test_mp4: Check that the server can serve multimedia files (`a.mp3` and `a.mp4`).
+
+- **JSON resource tests**:
+  - test_get_resources: Ensures the server can return all resources in JSON format from the `/resources` endpoint.
+  - test_get_cat: Validates that the server can return a specific category (`gatos`) from the `/resources/gatos` endpoint.
+  - test_post_new_cat: Sends a `POST` request to create a new resource in the `gatos` category.
+  - test_update_cat: Sends a `PUT` request to update an existing resource in the `gatos` category.
+  - test_post_delete_cat: Creates a resource using `POST` and then deletes it using `DELETE`.
+
+- **Additional tests**:
+  - test_6_external_get_and_save: Sends a `GET` request to an external server (`example.com`) and saves the response to a local file.
+  - test_404_not_found: Verifies that the server returns a `404 Not Found` status for non-existent resources.
+**Expected results**
+
+- If all tests pass, the following message will be displayed:
+  ```bash
+  ----------------------------------------------------------------------
+  Ran X tests in Y.YYYs
+
+  OK
 
 **GUI for the client**
 
