@@ -56,7 +56,7 @@ class SimpleHTTPServer:
             print(f"Error al enlazar el servidor en {self.host}:{self.port} -> {e}")
             return
         server_socket.listen(5)
-        print(f"Servidor HTTP escuchando en {self.host}:{self.port}")
+        print(f"HTTP Server listening on {self.host}:{self.port}")
         
         while True:
             client_socket, addr = server_socket.accept()
@@ -425,7 +425,7 @@ class SimpleHTTPServer:
                         break
                 if found is None:
                     return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
-                json_data = json.dumps(found, indent=4)
+                json_data = json.dumps(found, indent=4, ensure_ascii=False)
                 return f"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {len(json_data)}\r\n\r\n{json_data}"
             elif method == "PUT":
                 try:
@@ -475,21 +475,21 @@ class SimpleHTTPServer:
             with open(file_path, "w", encoding='utf-8') as f:
                 json.dump(data, f, indent=4, ensure_ascii=False)
         except Exception as e:
-            print("Error escribiendo el archivo de recursos:", e)
+            print("Error writing the resources file:", e)
 
 if __name__ == "__main__":
     try:
-        port_input = input("Ingresa el puerto para iniciar el servidor (por defecto 8080): ").strip()
+        port_input = input("Put the port to start the server (default 8080): ").strip()
         if port_input == "":
             port = 8080
         else:
             try:
                 port = int(port_input)
             except ValueError:
-                print("Puerto inválido, se usará 8080")
+                print("Not valid port, port 8080 will be used")
                 port = 8080
     except KeyboardInterrupt:
-        print("\nEjecución cancelada por el usuario.")
+        print("\nExecution canceled by the user.")
         exit()
 
     server = SimpleHTTPServer(port=port)

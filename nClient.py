@@ -29,7 +29,9 @@ import os
 
 def create_socket():
     """Create a plain (non-SSL) TCP socket."""
-    return socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(8)          
+    return sock
 
 def connect_socket(sock, host="localhost", port=80):
     """Connect the socket in plain text."""
@@ -263,11 +265,13 @@ def main():
                     else:
                         print("Invalid POST path. Format: /resources/{category}")
                         continue
-                else:  # PUT
-                    if len(parts) < 3:
+                elif method == "PUT":
+                    if len(parts) < 4:
                         if len(parts) == 1:
                             cat = input("Enter resource category: ").strip()
                             path = f"/resources/{cat}"
+                        elif len(parts) == 3:
+                            pass    
                     else:
                         print("Invalid PUT path. Format: /resources/{category}/{id}")
                         continue
@@ -324,7 +328,7 @@ def main():
                     content_type = "application/json"
 
             # Construct and send request
-            parts = [f"{method} {path} HTTP/1.1", f"Host: {raw_host}", f"Content-Type: {content_type}"]
+            parts = [f"{method} {path} HTTP/1.1", f"Host: {raw_host}", "Connection: close", f"Content-Type: {content_type}"]
             if body is not None:
                 parts.append(f"Content-Length: {len(body)}")
             parts.extend(custom_headers)
@@ -345,7 +349,10 @@ def main():
 
             if response:
                 print("\n=== Response ===\n")
-                print(response)
+                if isinstance(response, bytes):
+                    print(response.decode('utf-8', errors='replace'))
+                else:
+                    print(response)
         except Exception as e:
             print(f"Error: {e}")
 
