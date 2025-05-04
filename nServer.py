@@ -242,10 +242,10 @@ class SimpleHTTPServer:
             )
 
             # Escribir el archivo
-            mode = 'wb' if is_binary else 'w'
-            encoding = None if is_binary else 'utf-8'
+            mode = 'wb' if is_binary or isinstance(content, bytes) else 'w'
+            encoding = None if is_binary or isinstance(content, bytes) else 'utf-8'
             
-            with open(full_path, mode) as f:
+            with open(full_path, mode, encoding=encoding) as f:
                 if isinstance(content, bytes) or is_binary:
                     f.write(content)
                 else:
