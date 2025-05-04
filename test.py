@@ -99,7 +99,7 @@ class TestHTTPServer(unittest.TestCase):
         self.assertIn("HTTP/1.1 200 OK", response)
         print(response)
         
-    def test_get_dog(self):    
+    def test_get_cat(self):    
         # Gato específico
         response = self.send_request("GET", "/resources/gatos/1")
         self.assertIn("HTTP/1.1 200 OK", response)
@@ -160,16 +160,30 @@ class TestHTTPServer(unittest.TestCase):
         response = self.send_request("GET", f"/resources/gatos/{cat_id}")
         print(response)
         
-    def test_delete_cat(self):
-        """Test 5: DELETE para eliminar el gato"""
+    def test_post_delete_cat(self):
+        """Test 5: POST AND DELETE para crear y eliminar el gato"""
         # Obtener todos los gatos
+        new_cat = {
+            "nombre": "Nuevo Gato",
+            "origen": "España",
+            "tamaño": "Mediano",
+            "curiosidad": "Raza creada para pruebas"
+        }
+        headers = {}
+        response = self.send_request(
+            "POST", 
+            "/resources/gatos", 
+            body=json.dumps(new_cat),
+            headers=headers
+        )
+        self.assertIn("HTTP/1.1 201 Created", response)
         response = self.send_request("GET", "/resources/gatos")
         data = json.loads(response.split("\r\n\r\n")[1])
         
-        # Buscar el gato actualizado por nombre
+        # Buscar el gato creado
         cat_id = None
         for cat in data:
-            if cat["nombre"] == "Gato Actualizado":
+            if cat["nombre"] == "Nuevo Gato":
                 cat_id = cat["id"]
                 break
 
@@ -190,23 +204,95 @@ class TestHTTPServer(unittest.TestCase):
         self.host, self.port = "example.com", 80
         
         try:
-            response = self.send_request("GET", "/")
-            self.assertIn("HTTP/1.1 200 OK", response)
+            # Intentar conectarse al host externo
+            try:
+                response = self.send_request("GET", "/")
+            except Exception as e:
+                self.fail(f"No se pudo conectar al host externo: {e}")
+            
+            # Validar la respuesta
+            self.assertIn("HTTP/1.1 200 OK", response, "El servidor externo no respondió con 200 OK")
             
             # Guardar el contenido en un archivo
             save_filename = "example_home.html"
-            with open(save_filename, 'w', encoding='utf-8') as f:
+            try:
                 content = response.split("\r\n\r\n", 1)[1]
-                f.write(content)
+                with open(save_filename, 'w', encoding='utf-8') as f:
+                    f.write(content)
+            except Exception as e:
+                self.fail(f"Error al guardar el contenido en un archivo: {e}")
             
             # Verificar que el archivo se creó
-            self.assertTrue(os.path.exists(save_filename))
+            self.assertTrue(os.path.exists(save_filename), "El archivo no se creó correctamente")
             
             # Limpiar - eliminar el archivo de prueba
             os.remove(save_filename)
         finally:
             # Restaurar valores originales
             self.host, self.port = original_host, original_port
+    
+    
+    def test_404_not_found(self):
+        """Test GET recurso inexistente devuelve 404"""
+        response = self.send_request("GET", "/no_existe.txt")
+        self.assertIn("404 Not Found", response)
+
+    def test_post_a_gif(self):
+        """Test POST para subir el archivo a.gif"""
+        file_path = "a.gif"
+        with open(file_path, "rb") as f:
+            file_content = f.read()
+
+        headers = {
+            "Content-Type": "image/gif"
+        }
+        response = self.send_request(
+            "POST",
+            f"/{file_path}",
+            body=file_content,
+            headers=headers
+        )
+        self.assertIn("HTTP/1.1 200 OK", response)
+        self.assertIn("Content-Type: text/plain", response)
+        self.assertIn(f"File {file_path} was successfully updated", response)
+
+    def test_post_a_txt(self):
+        """Test POST para subir el archivo a.txt"""
+        file_path = "a.txt"
+        with open(file_path, "r", encoding="utf-8") as f:
+            file_content = f.read()
+
+        headers = {
+            "Content-Type": "text/plain"
+        }
+        response = self.send_request(
+            "POST",
+            f"/{file_path}",
+            body=file_content,
+            headers=headers
+        )
+        self.assertIn("HTTP/1.1 200 OK", response)
+        self.assertIn("Content-Type: text/plain", response)
+        self.assertIn(f"File {file_path} was successfully updated", response)
+
+    def test_post_a_jpg(self):
+        """Test POST para subir el archivo a.jpg"""
+        file_path = "a.jpg"
+        with open(file_path, "rb") as f:
+            file_content = f.read()
+
+        headers = {
+            "Content-Type": "image/jpeg"
+        }
+        response = self.send_request(
+            "POST",
+            f"/{file_path}",
+            body=file_content,
+            headers=headers
+        )
+        self.assertIn("HTTP/1.1 200 OK", response)
+        self.assertIn("Content-Type: text/plain", response)
+        self.assertIn(f"File {file_path} was successfully updated", response)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
