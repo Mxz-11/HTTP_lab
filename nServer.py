@@ -68,7 +68,7 @@ class SimpleHTTPServer:
     def log_full_request(self, addr, headers_raw, body, content_type):
         timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
         ip, port = addr
-        log_path = os.path.join(self.server_dir, "server.log")
+        log_path = os.path.join(self.server_dir, "private", "server.log")
         
         request_lines = [line.strip() for line in headers_raw.strip().splitlines() if line.strip()]
         
