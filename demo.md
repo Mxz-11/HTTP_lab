@@ -297,9 +297,15 @@ To ensure the correct functionality of the HTTP server, we have implemented auto
   - test_update_cat: Sends a `PUT` request to update an existing resource in the `gatos` category.
   - test_post_delete_cat: Creates a resource using `POST` and then deletes it using `DELETE`.
 
+- **Multimedia file tests**:
+  - test_post_a_txt: Sends a `POST` request to upload the `a.txt` file to the server.
+  - test_post_a_gif: Sends a `POST` request to upload the `a.gif` file to the server.
+  - test_post_a_jpg: Sends a `POST` request to upload the `a.jpg` file to the server.
+
 - **Additional tests**:
   - test_6_external_get_and_save: Sends a `GET` request to an external server (`example.com`) and saves the response to a local file.
   - test_404_not_found: Verifies that the server returns a `404 Not Found` status for non-existent resources.
+
 **Expected results**
 
 - If all tests pass, the following message will be displayed:
@@ -308,6 +314,7 @@ To ensure the correct functionality of the HTTP server, we have implemented auto
   Ran X tests in Y.YYYs
 
   OK
+  ```
 
 **GUI for the client**
 
