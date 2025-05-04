@@ -68,21 +68,13 @@ class SimpleHTTPServer:
     def log_full_request(self, addr, headers_raw, body, content_type):
         timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
         ip, port = addr
-        log_path = os.path.join(self.server_dir, "private", "server.log")
+        log_path = os.path.join(self.server_dir, "private","server.log")
         
         request_lines = [line.strip() for line in headers_raw.strip().splitlines() if line.strip()]
-        
         request_line = request_lines[0] if request_lines else "<empty request>"
         
         headers_clean = "\n".join(request_lines[1:])
-
-        try:
-            if content_type.startswith("text") or content_type == "application/json":
-                body_display = body.decode("utf-8", errors="replace")
-            else:
-                body_display = "<binary data>"
-        except Exception:
-            body_display = "<undecodable body>"
+        body_display = body
 
         with open(log_path, "a", encoding="utf-8") as f:
             f.write(f"{timestamp} {ip}:{port} - Request received:\n")
@@ -130,7 +122,24 @@ class SimpleHTTPServer:
                     if not chunk:
                         break
                     body += chunk
-            self.log_full_request(client_socket.getpeername(), headers_raw, body, headers.get("Content-Type", ""))
+            
+            bina_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.mp3', '.wav', '.mp4', '.avi')
+            bina = method in ("POST", "PUT") and path.lower().endswith(bina_extensions)
+
+            if method in ("POST", "PUT") and not bina:
+                try:
+                    body_str = body.decode('utf-8', errors='replace')
+                except:
+                    body_str = "[error decoding body]"
+            else:
+                body_str = ""
+
+            self.log_full_request(
+                client_socket.getpeername(),
+                headers_raw,
+                body_str,
+                headers.get("Content-Type", "")
+            )
             
             print(f"Method: {method}, Path: {path}")
 
