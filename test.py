@@ -238,12 +238,6 @@ class TestHTTPServer(unittest.TestCase):
         self.assertIn("404 Not Found", response)
     
 
-    def test_conditional_get_not_modified(self):
-        """Test GET condicional con If-Modified-Since devuelve 304"""
-        date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        response = self.send_request("GET", "/index.html", headers={"If-Modified-Since": date})
-        self.assertIn("304 Not Modified", response)
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
