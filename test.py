@@ -236,8 +236,44 @@ class TestHTTPServer(unittest.TestCase):
         """Test GET recurso inexistente devuelve 404"""
         response = self.send_request("GET", "/no_existe.txt")
         self.assertIn("404 Not Found", response)
-    
 
+    def test_post_a_gif(self):
+        """Test POST para subir el archivo a.gif"""
+        file_path = "a.gif"
+        with open(file_path, "rb") as f:
+            file_content = f.read()
+
+        headers = {
+            "Content-Type": "image/gif"
+        }
+        response = self.send_request(
+            "POST",
+            f"/{file_path}",
+            body=file_content,
+            headers=headers
+        )
+        self.assertIn("HTTP/1.1 200 OK", response)
+        self.assertIn("Content-Type: text/plain", response)
+        self.assertIn(f"File {file_path} was successfully updated", response)
+
+    def test_post_a_txt(self):
+        """Test POST para subir el archivo a.txt"""
+        file_path = "a.txt"
+        with open(file_path, "r", encoding="utf-8") as f:
+            file_content = f.read()
+
+        headers = {
+            "Content-Type": "text/plain"
+        }
+        response = self.send_request(
+            "POST",
+            f"/{file_path}",
+            body=file_content,
+            headers=headers
+        )
+        self.assertIn("HTTP/1.1 200 OK", response)
+        self.assertIn("Content-Type: text/plain", response)
+        self.assertIn(f"File {file_path} was successfully updated", response)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
