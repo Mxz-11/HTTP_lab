@@ -99,7 +99,7 @@ class TestHTTPServer(unittest.TestCase):
         self.assertIn("HTTP/1.1 200 OK", response)
         print(response)
         
-    def test_get_dog(self):    
+    def test_get_cat(self):    
         # Gato específico
         response = self.send_request("GET", "/resources/gatos/1")
         self.assertIn("HTTP/1.1 200 OK", response)
@@ -230,8 +230,20 @@ class TestHTTPServer(unittest.TestCase):
         finally:
             # Restaurar valores originales
             self.host, self.port = original_host, original_port
-# !Revisar que hace porque lo hace mal, abre un puerto test 6, y arreglar delete
-#! intentar avanzar con el head
+    
+    
+    def test_404_not_found(self):
+        """Test GET recurso inexistente devuelve 404"""
+        response = self.send_request("GET", "/no_existe.txt")
+        self.assertIn("404 Not Found", response)
+    
+
+    def test_conditional_get_not_modified(self):
+        """Test GET condicional con If-Modified-Since devuelve 304"""
+        date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        response = self.send_request("GET", "/index.html", headers={"If-Modified-Since": date})
+        self.assertIn("304 Not Modified", response)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
