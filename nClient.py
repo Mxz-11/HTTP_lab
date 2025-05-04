@@ -2,7 +2,9 @@
 """
 Authors:
     - Author Mxz11
-    - Añadir vuestros nombres aquí!
+    - Jorge Giménez
+    - Alex Langarita
+    - Arkaitz Subías
 
 Description:
     Este script gestiona el cliente del sistema cliente-servidor HTTP.
