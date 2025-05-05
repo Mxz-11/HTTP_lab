@@ -373,6 +373,14 @@ class SimpleHTTPServer:
             if method == "GET":
                 json_data = json.dumps(resources_data, indent=4)  # Formato bonito
                 return f"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {len(json_data)}\r\n\r\n{json_data}"
+            elif method == "HEAD":
+               json_data = json.dumps(resources_data, ensure_ascii=False)
+               json_bytes = json_data.encode("utf-8")
+               return (
+                   b"HTTP/1.1 200 OK\r\n"
+                   b"Content-Type: application/json; charset=utf-8\r\n"
+                   + f"Content-Length: {len(json_bytes)}\r\n\r\n".encode()
+               )
             else:
                 return "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n"
 
@@ -456,7 +464,13 @@ class SimpleHTTPServer:
         # Si se proporciona un id: /resources/{categoria}/{id}
         elif len(segments) == 3:
             resource_id = segments[2]
-            if method == "GET":
+            if method == "HEAD":
+                exists = any(str(obj.get("id")) == resource_id for obj in category_data)
+                if exists:
+                    return "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
+                else:
+                    return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
+            elif method == "GET":
                 found = None
                 for obj in category_data:
                     if str(obj.get("id")) == resource_id:

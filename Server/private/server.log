@@ -1,7 +1,40 @@
-[2025-05-04 13:31:17] 127.0.0.1:58084 - Request received:
-GET /resources/gatos HTTP/1.1
+[2025-05-05 21:15:04] 127.0.0.1:48196 - Request received:
+HEAD /resources HTTP/1.1
 Host: localhost
 Connection: close
+Content-Type: text/plain
 ------------------------------------------------------------
-<binary data>
+
+============================================================
+[2025-05-05 21:15:12] 127.0.0.1:58296 - Request received:
+HEAD /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: text/plain
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 21:15:18] 127.0.0.1:36598 - Request received:
+HEAD /resources/perretes HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: text/plain
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 21:15:28] 127.0.0.1:34048 - Request received:
+HEAD /resources/gatos/1 HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: text/plain
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 21:15:38] 127.0.0.1:34050 - Request received:
+HEAD /resources/gatos/2232423 HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: text/plain
+------------------------------------------------------------
+
 ============================================================
