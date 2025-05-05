@@ -223,6 +223,22 @@ Enter the resource path (blank => use base_path): /private/resources.json
 Do you want to save the response to a file? (y/N): n
 ```
 
+- Offer minimal configuration that allows choosing on which port the server starts
+
+```bash
+newgrp wireshark
+```
+
+```bash
+wireshark
+```
+
+Chosing the loopback network
+```wireshark
+tcp.port == X || udp.port == X
+```
+
+
 **Optional features**
 
 For the optional features, we decided to do: Sending and receiving multimedia files, Logging, Automated Testing, GUI for the client and CRUD persistency (asked by us)
