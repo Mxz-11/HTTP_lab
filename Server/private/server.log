@@ -5,3 +5,645 @@ Connection: close
 ------------------------------------------------------------
 <binary data>
 ============================================================
+[2025-05-05 11:16:46] 127.0.0.1:34848 - Request received:
+GET /no_existe.txt HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:46] 127.0.0.1:34850 - Request received:
+GET /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:46] 127.0.0.1:34851 - Request received:
+GET /resources/gatos/1 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:46] 127.0.0.1:34852 - Request received:
+GET /resources HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:46] 127.0.0.1:34853 - Request received:
+HEAD /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:46] 127.0.0.1:34854 - Request received:
+HEAD /resources/gatos/1 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:46] 127.0.0.1:34855 - Request received:
+HEAD /index.html HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:46] 127.0.0.1:34856 - Request received:
+GET /index.html HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:46] 127.0.0.1:34857 - Request received:
+GET /a.mp3 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:46] 127.0.0.1:34858 - Request received:
+GET /a.mp4 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:47] 127.0.0.1:34859 - Request received:
+POST /a.gif HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: image/gif
+Content-Length: 3294770
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:47] 127.0.0.1:34860 - Request received:
+POST /a.jpg HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: image/jpeg
+Content-Length: 20030
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:47] 127.0.0.1:34861 - Request received:
+POST /a.txt HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: text/plain
+Content-Length: 34
+------------------------------------------------------------
+HELLO WORLD, THE PUT METHOD WORKS
+
+============================================================
+[2025-05-05 11:16:47] 127.0.0.1:34862 - Request received:
+POST /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+Content-Length: 117
+------------------------------------------------------------
+{"nombre": "Nuevo Gato", "origen": "Espa\u00f1a", "tama\u00f1o": "Mediano", "curiosidad": "Raza creada para pruebas"}
+============================================================
+[2025-05-05 11:16:47] 127.0.0.1:34863 - Request received:
+GET /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:47] 127.0.0.1:34864 - Request received:
+DELETE /resources/gatos/8 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:47] 127.0.0.1:34865 - Request received:
+GET /resources/gatos/8 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:47] 127.0.0.1:34866 - Request received:
+POST /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+Content-Length: 117
+------------------------------------------------------------
+{"nombre": "Nuevo Gato", "origen": "Espa\u00f1a", "tama\u00f1o": "Mediano", "curiosidad": "Raza creada para pruebas"}
+============================================================
+[2025-05-05 11:16:47] 127.0.0.1:34867 - Request received:
+GET /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:47] 127.0.0.1:34868 - Request received:
+GET /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:16:47] 127.0.0.1:34869 - Request received:
+PUT /resources/gatos/8 HTTP/1.1
+Host: localhost
+Connection: close
+Content-Length: 126
+------------------------------------------------------------
+{"nombre": "Gato Actualizado", "origen": "Espa\u00f1a", "tama\u00f1o": "Grande", "curiosidad": "Informaci\u00f3n actualizada"}
+============================================================
+[2025-05-05 11:16:47] 127.0.0.1:34870 - Request received:
+GET /resources/gatos/8 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:10] 127.0.0.1:34898 - Request received:
+GET /no_existe.txt HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34900 - Request received:
+GET /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34901 - Request received:
+GET /resources/gatos/1 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34902 - Request received:
+GET /resources HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34903 - Request received:
+HEAD /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34904 - Request received:
+HEAD /index.html HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34905 - Request received:
+HEAD /a.mp3 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34906 - Request received:
+HEAD /a.mp4 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34907 - Request received:
+GET /resources HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34908 - Request received:
+GET /index.html HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34909 - Request received:
+GET /a.mp3 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34910 - Request received:
+GET /a.mp4 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34911 - Request received:
+POST /a.gif HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: image/gif
+Content-Length: 3294770
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34912 - Request received:
+POST /a.jpg HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: image/jpeg
+Content-Length: 20030
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34913 - Request received:
+POST /a.txt HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: text/plain
+Content-Length: 34
+------------------------------------------------------------
+HELLO WORLD, THE PUT METHOD WORKS
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34914 - Request received:
+POST /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+Content-Length: 117
+------------------------------------------------------------
+{"nombre": "Nuevo Gato", "origen": "Espa\u00f1a", "tama\u00f1o": "Mediano", "curiosidad": "Raza creada para pruebas"}
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34915 - Request received:
+GET /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34916 - Request received:
+DELETE /resources/gatos/8 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34917 - Request received:
+GET /resources/gatos/8 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34918 - Request received:
+POST /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+Content-Length: 117
+------------------------------------------------------------
+{"nombre": "Nuevo Gato", "origen": "Espa\u00f1a", "tama\u00f1o": "Mediano", "curiosidad": "Raza creada para pruebas"}
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34919 - Request received:
+GET /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34920 - Request received:
+GET /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34921 - Request received:
+PUT /resources/gatos/8 HTTP/1.1
+Host: localhost
+Connection: close
+Content-Length: 126
+------------------------------------------------------------
+{"nombre": "Gato Actualizado", "origen": "Espa\u00f1a", "tama\u00f1o": "Grande", "curiosidad": "Informaci\u00f3n actualizada"}
+============================================================
+[2025-05-05 11:19:11] 127.0.0.1:34922 - Request received:
+GET /resources/gatos/8 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:48] 127.0.0.1:34985 - Request received:
+GET /resources HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:48] 127.0.0.1:34986 - Request received:
+GET /index.html HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:48] 127.0.0.1:34987 - Request received:
+GET /a.mp3 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:48] 127.0.0.1:34988 - Request received:
+GET /a.mp4 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:49] 127.0.0.1:34989 - Request received:
+POST /a.gif HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: image/gif
+Content-Length: 3294770
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:49] 127.0.0.1:34990 - Request received:
+POST /a.jpg HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: image/jpeg
+Content-Length: 20030
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:49] 127.0.0.1:34991 - Request received:
+POST /a.txt HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: text/plain
+Content-Length: 34
+------------------------------------------------------------
+HELLO WORLD, THE PUT METHOD WORKS
+
+============================================================
+[2025-05-05 11:24:49] 127.0.0.1:34992 - Request received:
+POST /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+Content-Length: 117
+------------------------------------------------------------
+{"nombre": "Nuevo Gato", "origen": "Espa\u00f1a", "tama\u00f1o": "Mediano", "curiosidad": "Raza creada para pruebas"}
+============================================================
+[2025-05-05 11:24:49] 127.0.0.1:34993 - Request received:
+GET /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:49] 127.0.0.1:34994 - Request received:
+DELETE /resources/gatos/8 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:49] 127.0.0.1:34995 - Request received:
+GET /resources/gatos/8 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:49] 127.0.0.1:34996 - Request received:
+POST /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+Content-Length: 117
+------------------------------------------------------------
+{"nombre": "Nuevo Gato", "origen": "Espa\u00f1a", "tama\u00f1o": "Mediano", "curiosidad": "Raza creada para pruebas"}
+============================================================
+[2025-05-05 11:24:49] 127.0.0.1:34997 - Request received:
+GET /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:49] 127.0.0.1:34998 - Request received:
+GET /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:49] 127.0.0.1:34999 - Request received:
+PUT /resources/gatos/8 HTTP/1.1
+Host: localhost
+Connection: close
+Content-Length: 126
+------------------------------------------------------------
+{"nombre": "Gato Actualizado", "origen": "Espa\u00f1a", "tama\u00f1o": "Grande", "curiosidad": "Informaci\u00f3n actualizada"}
+============================================================
+[2025-05-05 11:24:49] 127.0.0.1:35000 - Request received:
+GET /resources/gatos/8 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35001 - Request received:
+GET /no_existe.txt HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35002 - Request received:
+GET /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35003 - Request received:
+GET /resources/gatos/1 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35004 - Request received:
+GET /resources HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35005 - Request received:
+HEAD /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35006 - Request received:
+HEAD /index.html HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35007 - Request received:
+HEAD /a.mp3 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35008 - Request received:
+HEAD /a.mp4 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35009 - Request received:
+GET /resources HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35010 - Request received:
+GET /index.html HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35011 - Request received:
+GET /a.mp3 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35012 - Request received:
+GET /a.mp4 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35013 - Request received:
+POST /a.gif HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: image/gif
+Content-Length: 3294770
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35014 - Request received:
+POST /a.jpg HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: image/jpeg
+Content-Length: 20030
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35015 - Request received:
+POST /a.txt HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: text/plain
+Content-Length: 34
+------------------------------------------------------------
+HELLO WORLD, THE PUT METHOD WORKS
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35016 - Request received:
+POST /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+Content-Length: 117
+------------------------------------------------------------
+{"nombre": "Nuevo Gato", "origen": "Espa\u00f1a", "tama\u00f1o": "Mediano", "curiosidad": "Raza creada para pruebas"}
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35017 - Request received:
+GET /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35018 - Request received:
+DELETE /resources/gatos/8 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35019 - Request received:
+GET /resources/gatos/8 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35020 - Request received:
+POST /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+Content-Length: 117
+------------------------------------------------------------
+{"nombre": "Nuevo Gato", "origen": "Espa\u00f1a", "tama\u00f1o": "Mediano", "curiosidad": "Raza creada para pruebas"}
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35021 - Request received:
+GET /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35022 - Request received:
+GET /resources/gatos HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35023 - Request received:
+PUT /resources/gatos/8 HTTP/1.1
+Host: localhost
+Connection: close
+Content-Length: 126
+------------------------------------------------------------
+{"nombre": "Gato Actualizado", "origen": "Espa\u00f1a", "tama\u00f1o": "Grande", "curiosidad": "Informaci\u00f3n actualizada"}
+============================================================
+[2025-05-05 11:24:51] 127.0.0.1:35024 - Request received:
+GET /resources/gatos/8 HTTP/1.1
+Host: localhost
+Connection: close
+------------------------------------------------------------
+
+============================================================

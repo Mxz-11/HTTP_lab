@@ -67,25 +67,42 @@ class TestHTTPServer(unittest.TestCase):
         return response
 
     def test_html(self):
-        """Test 1: GET para archivos existentes"""
-        # Probar con index.html
+        """GET para archivos existentes"""
         response = self.send_request("GET", "/index.html")
         self.assertIn("HTTP/1.1 200 OK", response)
         self.assertIn("Content-Type: text/html", response)
         print(response)
+        
+    def test_head_html(self):
+        response = self.send_request("HEAD", "/index.html")
+        self.assertIn("HTTP/1.1 200 OK", response)
+        self.assertIn("Content-Type: text/html", response)
+        print(response)
+        
     def test_mp3(self):    
         # Probar con a.mp3 (binario)
         response = self.send_request("GET", "/a.mp3", is_binary=True)
         self.assertIn(b"HTTP/1.1 200 OK", response)
         self.assertIn(b"Content-Type: audio/mpeg", response)
-        
+    
+    def test_head_mp3(self):    
+        # Probar con a.mp3 (binario)
+        response = self.send_request("HEAD", "/a.mp3", is_binary=True)
+        self.assertIn(b"HTTP/1.1 200 OK", response)
+        self.assertIn(b"Content-Type: audio/mpeg", response)
+            
     def test_mp4(self):
         response = self.send_request("GET", "/a.mp4", is_binary=True)
         self.assertIn(b"HTTP/1.1 200 OK", response)
         self.assertIn(b"Content-Type: video/mp4", response)
-
+        
+    def test_head_mp4(self):
+        response = self.send_request("HEAD", "/a.mp4", is_binary=True)
+        self.assertIn(b"HTTP/1.1 200 OK", response)
+        self.assertIn(b"Content-Type: video/mp4", response)
+        
     def test_get_resources(self):
-        """Test 2: GET para recursos JSON"""
+        """GET para recursos JSON"""
         # Todos los recursos
         response = self.send_request("GET", "/resources")
         self.assertIn("HTTP/1.1 200 OK", response)
@@ -93,20 +110,33 @@ class TestHTTPServer(unittest.TestCase):
         self.assertIn('"perros"', response)
         print(response)
         
+    def test_head_resources(self):
+        # Todos los recursos
+        response = self.send_request("HEAD", "/resources")
+        self.assertIn("HTTP/1.1 200 OK", response)
+        print(response) 
+        
     def test_get_cat(self):
         # Solo gatos
         response = self.send_request("GET", "/resources/gatos")
         self.assertIn("HTTP/1.1 200 OK", response)
         print(response)
         
-    def test_get_cat(self):    
+    def test_head_cat(self):
+        # Solo gatos
+        response = self.send_request("HEAD", "/resources/gatos")
+        self.assertIn("HTTP/1.1 200 OK", response)
+        print(response)
+        
+    def test_get_cat2(self):    
         # Gato específico
         response = self.send_request("GET", "/resources/gatos/1")
         self.assertIn("HTTP/1.1 200 OK", response)
         print(response)
+    
 
     def test_post_new_cat(self):
-        """Test 3: POST para crear nuevo gato"""
+        """POST para crear nuevo gato"""
         new_cat = {
             "nombre": "Nuevo Gato",
             "origen": "España",
@@ -127,7 +157,7 @@ class TestHTTPServer(unittest.TestCase):
         print(response)
 
     def test_update_cat(self):
-        """Test 4: PUT para actualizar el gato creado"""
+        """PUT para actualizar el gato creado"""
         # Obtener todos los gatos
         response = self.send_request("GET", "/resources/gatos")
         data = json.loads(response.split("\r\n\r\n")[1])
@@ -161,7 +191,7 @@ class TestHTTPServer(unittest.TestCase):
         print(response)
         
     def test_post_delete_cat(self):
-        """Test 5: POST AND DELETE para crear y eliminar el gato"""
+        """POST AND DELETE para crear y eliminar el gato"""
         # Obtener todos los gatos
         new_cat = {
             "nombre": "Nuevo Gato",
@@ -197,8 +227,8 @@ class TestHTTPServer(unittest.TestCase):
         self.assertIn("HTTP/1.1 404 Not Found", response)
 
 
-    def test_6_external_get_and_save(self):
-        """Test 6: GET para archivo externo y guardar localmente"""
+    def external_get_and_save(self):
+        """GET para archivo externo y guardar localmente"""
         # Cambiamos temporalmente el host y puerto
         original_host, original_port = self.host, self.port
         self.host, self.port = "example.com", 80
