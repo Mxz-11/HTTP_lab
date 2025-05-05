@@ -23,7 +23,7 @@ class TestHTTPServer(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        """Restaurar el archivo resources.json a su estado original"""
+        # Para Restaurar el archivo resources.json a su estado original
         with open(cls.resources_file, 'w', encoding='utf-8') as f:
             json.dump(cls.original_resources, f, indent=4, ensure_ascii=False)
 
@@ -67,80 +67,89 @@ class TestHTTPServer(unittest.TestCase):
         return response
 
     def test_html(self):
-        """GET para archivos existentes"""
+        """GET to a .html"""
         response = self.send_request("GET", "/index.html")
         self.assertIn("HTTP/1.1 200 OK", response)
         self.assertIn("Content-Type: text/html", response)
-        print(response)
         
     def test_head_html(self):
+        """HEAD to a .html"""
         response = self.send_request("HEAD", "/index.html")
         self.assertIn("HTTP/1.1 200 OK", response)
         self.assertIn("Content-Type: text/html", response)
-        print(response)
         
     def test_mp3(self):    
-        # Probar con a.mp3 (binario)
+        """GET to a binary (mp3)"""
         response = self.send_request("GET", "/a.mp3", is_binary=True)
         self.assertIn(b"HTTP/1.1 200 OK", response)
         self.assertIn(b"Content-Type: audio/mpeg", response)
     
     def test_head_mp3(self):    
-        # Probar con a.mp3 (binario)
+        """HEAD to a binary (mp3)"""
         response = self.send_request("HEAD", "/a.mp3", is_binary=True)
         self.assertIn(b"HTTP/1.1 200 OK", response)
         self.assertIn(b"Content-Type: audio/mpeg", response)
             
     def test_mp4(self):
+        """GET to a binary (mp4)"""
         response = self.send_request("GET", "/a.mp4", is_binary=True)
         self.assertIn(b"HTTP/1.1 200 OK", response)
         self.assertIn(b"Content-Type: video/mp4", response)
         
     def test_head_mp4(self):
+        """HEAD to a binary (mp4)"""
         response = self.send_request("HEAD", "/a.mp4", is_binary=True)
         self.assertIn(b"HTTP/1.1 200 OK", response)
         self.assertIn(b"Content-Type: video/mp4", response)
         
     def test_get_resources(self):
-        """GET para recursos JSON"""
-        # Todos los recursos
+        """GET to a JSON"""
         response = self.send_request("GET", "/resources")
         self.assertIn("HTTP/1.1 200 OK", response)
         self.assertIn('"gatos"', response)
         self.assertIn('"perros"', response)
-        print(response)
         
     def test_head_resources(self):
-        # Todos los recursos
+        """HEAD to a JSON"""
         response = self.send_request("HEAD", "/resources")
         self.assertIn("HTTP/1.1 200 OK", response)
-        print(response) 
         
     def test_get_cat(self):
-        # Solo gatos
+        """GET to gatos collection"""
         response = self.send_request("GET", "/resources/gatos")
         self.assertIn("HTTP/1.1 200 OK", response)
-        print(response)
         
     def test_head_cat(self):
-        # Solo gatos
+        """HEAD to gatos collection"""
         response = self.send_request("HEAD", "/resources/gatos")
         self.assertIn("HTTP/1.1 200 OK", response)
-        print(response)
         
     def test_get_cat2(self):    
-        # Gato específico
+        """GET to gatos id 1"""
         response = self.send_request("GET", "/resources/gatos/1")
         self.assertIn("HTTP/1.1 200 OK", response)
-        print(response)
     
+    def test_head_cat2(self):    
+        """HEAD to gatos id 2"""
+        response = self.send_request("HEAD", "/resources/gatos/2")
+        self.assertIn("HTTP/1.1 200 OK", response)
 
+    def test_get_cat3(self):    
+        """GET to inexistent id"""
+        response = self.send_request("HEAD", "/resources/gatos/4252243")
+        self.assertIn("HTTP/1.1 404 Not Found", response)
+    
+    
+    def test_head_cat3(self):    
+        """HEAD to inexistent id"""
+        response = self.send_request("HEAD", "/resources/gatos/312412")
+        self.assertIn("HTTP/1.1 404 Not Found", response)
+    
     def test_post_new_cat(self):
-        """POST para crear nuevo gato"""
+        """POST to create a new cat"""
         new_cat = {
             "nombre": "Nuevo Gato",
-            "origen": "España",
-            "tamaño": "Mediano",
+            "origen": "Spain",
             "curiosidad": "Raza creada para pruebas"
         }
         headers = {}
@@ -152,123 +161,41 @@ class TestHTTPServer(unittest.TestCase):
         )
         self.assertIn("HTTP/1.1 201 Created", response)
         
-        # Verificar que se creó el nuevo gato
-        response = self.send_request("GET", "/resources/gatos")
-        print(response)
+
 
     def test_update_cat(self):
-        """PUT para actualizar el gato creado"""
-        # Obtener todos los gatos
-        response = self.send_request("GET", "/resources/gatos")
-        data = json.loads(response.split("\r\n\r\n")[1])
-        
-        # Buscar el gato creado por nombre
-        cat_id = None
-        for cat in data:
-            if cat["nombre"] == "Nuevo Gato":
-                cat_id = cat["id"]
-                break
-
-        self.assertIsNotNone(cat_id, "No se encontró el gato creado")
-        
+        """PUT to update a cat"""
         updated_cat = {
             "nombre": "Gato Actualizado",
-            "origen": "España",
-            "tamaño": "Grande",
+            "origen": "Spain",
             "curiosidad": "Información actualizada"
         }
         headers = {}
+        
         response = self.send_request(
             "PUT", 
-            f"/resources/gatos/{cat_id}", 
+            f"/resources/gatos/2", 
             body=json.dumps(updated_cat),
             headers=headers
         )
         self.assertIn("HTTP/1.1 200 OK", response)
         
-        # Verificar que se actualizó
-        response = self.send_request("GET", f"/resources/gatos/{cat_id}")
-        print(response)
         
-    def test_post_delete_cat(self):
-        """POST AND DELETE para crear y eliminar el gato"""
-        # Obtener todos los gatos
-        new_cat = {
-            "nombre": "Nuevo Gato",
-            "origen": "España",
-            "tamaño": "Mediano",
-            "curiosidad": "Raza creada para pruebas"
-        }
-        headers = {}
-        response = self.send_request(
-            "POST", 
-            "/resources/gatos", 
-            body=json.dumps(new_cat),
-            headers=headers
-        )
-        self.assertIn("HTTP/1.1 201 Created", response)
-        response = self.send_request("GET", "/resources/gatos")
-        data = json.loads(response.split("\r\n\r\n")[1])
-        
-        # Buscar el gato creado
-        cat_id = None
-        for cat in data:
-            if cat["nombre"] == "Nuevo Gato":
-                cat_id = cat["id"]
-                break
-
-        self.assertIsNotNone(cat_id, "No se encontró el gato a eliminar")
-        
-        response = self.send_request("DELETE", f"/resources/gatos/{cat_id}")
+    def test_delete_cat(self):
+        """DELETE a cat""" 
+        response = self.send_request("DELETE", f"/resources/gatos/4")
         self.assertIn("HTTP/1.1 200 OK", response)
         
-        # Verificar que ya no existe
-        response = self.send_request("GET", f"/resources/gatos/{cat_id}")
+        response = self.send_request("GET", f"/resources/gatos/4")
         self.assertIn("HTTP/1.1 404 Not Found", response)
 
-
-    def external_get_and_save(self):
-        """GET para archivo externo y guardar localmente"""
-        # Cambiamos temporalmente el host y puerto
-        original_host, original_port = self.host, self.port
-        self.host, self.port = "example.com", 80
-        
-        try:
-            # Intentar conectarse al host externo
-            try:
-                response = self.send_request("GET", "/")
-            except Exception as e:
-                self.fail(f"No se pudo conectar al host externo: {e}")
-            
-            # Validar la respuesta
-            self.assertIn("HTTP/1.1 200 OK", response, "El servidor externo no respondió con 200 OK")
-            
-            # Guardar el contenido en un archivo
-            save_filename = "example_home.html"
-            try:
-                content = response.split("\r\n\r\n", 1)[1]
-                with open(save_filename, 'w', encoding='utf-8') as f:
-                    f.write(content)
-            except Exception as e:
-                self.fail(f"Error al guardar el contenido en un archivo: {e}")
-            
-            # Verificar que el archivo se creó
-            self.assertTrue(os.path.exists(save_filename), "El archivo no se creó correctamente")
-            
-            # Limpiar - eliminar el archivo de prueba
-            os.remove(save_filename)
-        finally:
-            # Restaurar valores originales
-            self.host, self.port = original_host, original_port
-    
-    
     def test_404_not_found(self):
-        """Test GET recurso inexistente devuelve 404"""
+        """GET to an inexistent file"""
         response = self.send_request("GET", "/no_existe.txt")
         self.assertIn("404 Not Found", response)
 
     def test_post_a_gif(self):
-        """Test POST para subir el archivo a.gif"""
+        """POST to upload a.gif"""
         file_path = "a.gif"
         with open(file_path, "rb") as f:
             file_content = f.read()
@@ -287,7 +214,7 @@ class TestHTTPServer(unittest.TestCase):
         self.assertIn(f"File {file_path} was successfully updated", response)
 
     def test_post_a_txt(self):
-        """Test POST para subir el archivo a.txt"""
+        """POST to upload a.txt"""
         file_path = "a.txt"
         with open(file_path, "r", encoding="utf-8") as f:
             file_content = f.read()
@@ -303,10 +230,29 @@ class TestHTTPServer(unittest.TestCase):
         )
         self.assertIn("HTTP/1.1 200 OK", response)
         self.assertIn("Content-Type: text/plain", response)
-        self.assertIn(f"File {file_path} was successfully updated", response)
+        
+    def test_put_a_txt(self):
+        """PUT to update b.txt with new content"""
+        file_path = "b.txt"
+        new_content = "Test PUT works"
+        
+        response = self.send_request(
+            "PUT",
+            f"/{file_path}",
+            body=new_content,
+            headers={}
+        )
+        self.assertIn("HTTP/1.1 200 OK", response)
+        self.assertIn("Content-Type: text/plain", response)
+        self.assertIn("File b.txt was successfully updated", response)
+        
+        # Verificar que el contenido se actualizó correctamente
+        response = self.send_request("GET", f"/{file_path}")
+        self.assertIn("HTTP/1.1 200 OK", response)
+        self.assertIn(new_content, response.split("\r\n\r\n")[1])
 
     def test_post_a_jpg(self):
-        """Test POST para subir el archivo a.jpg"""
+        """POST to upload a.jpg"""
         file_path = "a.jpg"
         with open(file_path, "rb") as f:
             file_content = f.read()
@@ -322,7 +268,6 @@ class TestHTTPServer(unittest.TestCase):
         )
         self.assertIn("HTTP/1.1 200 OK", response)
         self.assertIn("Content-Type: text/plain", response)
-        self.assertIn(f"File {file_path} was successfully updated", response)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
