@@ -348,6 +348,20 @@ To ensure the correct functionality of the HTTP server, we have implemented auto
 We have done a GUI using the Gradio library on python.
 
 
+**Deployment on a real server**
+
+To do this we used a remote computer running the server. The remote computer has configured a static private IP address, and we use Tailscale to be able to access the device remotely. This way, from the clients perspective, when we use the public Tailscale IP address of the remote device running the server as the host instead of localhost, we can connect remotely to the server and it will work as intended. 
+
+To do this we have to change the host of the server from localhost to 0.0.0.0, otherwise it will reject the connection.
+```python
+    def __init__(self, host='0.0.0.0', port=8080):  # Previously it was (self, host='localhost', port=8080)
+        self.host = host
+        self.port = port
+        self.resources = {}
+        self.server_dir = 'Server'
+```
+
+
 **CRUD persistency**
 
 As we saw before, the content can be accessible by every user if the resources are on the file /Server/private/resources.json
