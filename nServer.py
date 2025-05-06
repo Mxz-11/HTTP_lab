@@ -382,7 +382,7 @@ class SimpleHTTPServer:
         # Si la ruta es exactamente "/resources"
         if len(segments) == 1:
             if method == "GET":
-                json_data = json.dumps(resources_data, indent=4)  # Formato bonito
+                json_data = json.dumps(resources_data, indent=4, ensure_ascii=False)
                 return f"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {len(json_data)}\r\n\r\n{json_data}"
             elif method == "HEAD":
                json_data = json.dumps(resources_data, ensure_ascii=False)
@@ -391,7 +391,7 @@ class SimpleHTTPServer:
                    b"HTTP/1.1 200 OK\r\n"
                    b"Content-Type: application/json; charset=utf-8\r\n"
                    + f"Content-Length: {len(json_bytes)}\r\n\r\n".encode()
-               )
+                )
             else:
                 return "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n"
 

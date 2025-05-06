@@ -307,7 +307,7 @@ To ensure the correct functionality of the HTTP server, we have implemented auto
    - Navigate to the directory where the `test.py` file is located.
    - Run the following command:
      ```bash
-     python -m unittest test.py
+     python3 -m unittest test.py -v
      ```
    - This will execute all the tests defined in the file and display the results in the terminal.
 
