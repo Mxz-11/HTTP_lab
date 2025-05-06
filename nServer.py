@@ -83,6 +83,13 @@ class SimpleHTTPServer:
             f.write("-" * 60 + "\n")
             f.write(body_display + "\n")
             f.write("=" * 60 + "\n")
+
+    def is_path_traversal(self, file_path):
+        """
+        Verifica si la ruta intenta salir del directorio base.
+        """
+        full_path = os.path.abspath(os.path.join(self.server_dir, os.path.normpath(file_path)))
+        return not full_path.startswith(os.path.abspath(self.server_dir))
     
     def handle_request(self, client_socket):
         try:
@@ -214,8 +221,7 @@ class SimpleHTTPServer:
 
     def serve_static(self, file_path, headers=None):
         try:
-            # Bloquear acceso a carpeta "private"
-            if self.is_private(file_path):
+            if self.is_private(file_path) or self.is_path_traversal(file_path):
                 return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n".encode()
             full_path = os.path.join(self.server_dir, os.path.normpath(file_path))
             if not os.path.exists(full_path) or not os.path.isfile(full_path):

@@ -5,6 +5,8 @@ import json
 import os
 from datetime import datetime
 
+# python3 -m unittest test.py -v
+
 class TestHTTPServer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -268,6 +270,31 @@ class TestHTTPServer(unittest.TestCase):
         )
         self.assertIn("HTTP/1.1 200 OK", response)
         self.assertIn("Content-Type: text/plain", response)
+    
+    def test_access_private_file(self):
+        """GET a private file should return 403 Forbidden"""
+        response = self.send_request("GET", "/private/server.log")
+        self.assertIn("HTTP/1.1 403 Forbidden", response)
+
+    def test_custom_header(self):
+        """Send a custom header and check if the response still works"""
+        headers = {"X-Test-Header": "abc123"}
+        response = self.send_request("GET", "/index.html", headers=headers)
+        self.assertIn("HTTP/1.1 200 OK", response)
+
+    def test_put_empty_body(self):
+        """PUT with empty body should return 400 or handle gracefully"""
+        response = self.send_request("PUT", "/a.txt", body="")
+        self.assertIn("200 OK", response)
+
+    def test_delete_nonexistent_file(self):
+        response = self.send_request("DELETE", "/no_such_file.txt")
+        self.assertIn("404 Not Found", response)
+
+    def test_directory_traversal_attack(self):
+        response = self.send_request("GET", "/../nServer.py")
+        self.assertIn("403 Forbidden", response)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
