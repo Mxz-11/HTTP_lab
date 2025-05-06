@@ -81,7 +81,12 @@ class SimpleHTTPServer:
             f.write(f"{request_line}\n")
             f.write(headers_clean + "\n")
             f.write("-" * 60 + "\n")
-            f.write(body_display + "\n")
+            try:
+                json_obj = json.loads(body_display)
+                formatted = json.dumps(json_obj, indent=4, ensure_ascii=False)
+                f.write(formatted + "\n")
+            except Exception:
+                f.write(body_display + "\n")
             f.write("=" * 60 + "\n")
 
     def is_path_traversal(self, file_path):
