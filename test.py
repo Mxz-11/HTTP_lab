@@ -295,6 +295,19 @@ class TestHTTPServer(unittest.TestCase):
         response = self.send_request("GET", "/../nServer.py")
         self.assertIn("403 Forbidden", response)
 
+    def test_invalid_path(self):
+        response = self.send_request("GET", "//index.html")
+        self.assertIn("HTTP/1.1 403 Forbidden", response)
+
+    def test_post_without_body(self):
+        response = self.send_request("POST", "/resources/gatos")
+        self.assertIn("400 Bad Request", response)
+
+    def test_log_contains_request(self):
+        self.send_request("GET", "/index.html")
+        with open("Server/private/server.log", "r", encoding="utf-8") as log:
+            log_content = log.read()
+        self.assertIn("GET /index.html HTTP/1.1", log_content)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
