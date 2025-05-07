@@ -191,11 +191,6 @@ class TestHTTPServer(unittest.TestCase):
         response = self.send_request("GET", f"/resources/gatos/4")
         self.assertIn("HTTP/1.1 404 Not Found", response)
 
-    def test_404_not_found(self):
-        """GET to an inexistent file"""
-        response = self.send_request("GET", "/no_existe.txt")
-        self.assertIn("404 Not Found", response)
-
     def test_post_a_gif(self):
         """POST to upload a.gif"""
         file_path = "a.gif"
@@ -233,7 +228,7 @@ class TestHTTPServer(unittest.TestCase):
         self.assertIn("HTTP/1.1 200 OK", response)
         self.assertIn("Content-Type: text/plain", response)
         
-    def test_put_a_txt(self):
+    def test_put_txt(self):
         """PUT to update b.txt with new content"""
         file_path = "b.txt"
         new_content = "Test PUT works"

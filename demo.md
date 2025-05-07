@@ -337,7 +337,7 @@ To ensure the correct functionality of the HTTP server, we have implemented auto
 
 - **Additional tests**:
 
-  - test_404_not_found: Verifies that the server returns a `404 Not Found` status for non-existent resources.
+  - test_delete_nonexistent_file: Verifies that the server returns a `404 Not Found` status for non-existent resources.
   - test_access_private_file: Verifies that you can't enter in the `private` folder normally, returning a `403 Forbidden`.
   - test_custom_header: Verifies that the server accepts custom headers.
   - test_put_empty_body: Verify that the server correctly handles a PUT request with an empty body to the `/a.txt` resource.
