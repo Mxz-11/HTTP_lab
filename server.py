@@ -7,7 +7,6 @@ from http import HTTPStatus
 from urllib.parse import unquote, urlparse
 from pathlib import Path
 
-# Server settings
 DEFAULT_HOST = 'localhost'
 DEFAULT_PORT = 8080
 SERVER_DIR = Path('Server')
