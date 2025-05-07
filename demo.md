@@ -314,24 +314,37 @@ To ensure the correct functionality of the HTTP server, we have implemented auto
 **Tests included in [test.py](./test.py)**
 
 - **Static content tests**:
-  - test_html: Verifies that the server can serve a static HTML file (`index.html`).
-  - test_mp3 and test_mp4: Check that the server can serve multimedia files (`a.mp3` and `a.mp4`).
+  - test_html and test_head_html: Verifies that the server can serve a static HTML file (`index.html`).
+  - test_mp3, test_mp4, test_head_mp3 and test_head_mp4: Check that the server can serve multimedia files (`a.mp3` and `a.mp4`).
 
 - **JSON resource tests**:
   - test_get_resources: Ensures the server can return all resources in JSON format from the `/resources` endpoint.
+  - test_head_resources: Verifies that the server responds correctly to a `HEAD` request to the `/resources` endpoint without the body.
   - test_get_cat: Validates that the server can return a specific category (`gatos`) from the `/resources/gatos` endpoint.
+  - test_head_cat: Verifies that the server responds correctly to a `HEAD` request to the `/resources/gatos` endpoint without the body.
+  - test_get_cat2: Validates that the server can return a specific ID from the `/resources/gatos` endpoint.
+  - test_head_cat2: Verifies that the server responds successfully to a `HEAD` request for the resource with a specific ID in a specific category, not including the resource body.
+  - test_get_cat3 / test_head_cat3: Validates that the server returns a `404 Not Found` if an inexistent id is put.
   - test_post_new_cat: Sends a `POST` request to create a new resource in the `gatos` category.
   - test_update_cat: Sends a `PUT` request to update an existing resource in the `gatos` category.
-  - test_post_delete_cat: Creates a resource using `POST` and then deletes it using `DELETE`.
+  - test_delete_cat: Sends a `DELETE` request to delete an existing resource in the `gatos` category.
 
 - **Multimedia file tests**:
   - test_post_a_txt: Sends a `POST` request to upload the `a.txt` file to the server.
+  - test_put_txt: Sends a `PUT` request to modify the `b.txt` file.
   - test_post_a_gif: Sends a `POST` request to upload the `a.gif` file to the server.
   - test_post_a_jpg: Sends a `POST` request to upload the `a.jpg` file to the server.
 
 - **Additional tests**:
-  - test_6_external_get_and_save: Sends a `GET` request to an external server (`example.com`) and saves the response to a local file.
+
   - test_404_not_found: Verifies that the server returns a `404 Not Found` status for non-existent resources.
+  - test_access_private_file: Verifies that you can't enter in the `private` folder normally, returning a `403 Forbidden`.
+  - test_custom_header: Verifies that the server accepts custom headers.
+  - test_put_empty_body: Verify that the server correctly handles a PUT request with an empty body to the `/a.txt` resource.
+  - test_directory_traversal_attack: Verifies that there are not Security breaches.
+  - test_invalid_path: Verify that the server rejects malformed paths like `//index.html` with a `403 Forbidden` status.
+  - test_post_without_body: Ensures that the server responds correctly when a `POST` request is made to the `/resources/{category}` endpoint without a body.
+  - test_log_contains_request: Check that the server correctly logs HTTP requests to the log file `server.log` .
 
 **Expected results**
 
