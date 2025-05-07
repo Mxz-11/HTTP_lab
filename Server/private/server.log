@@ -1,0 +1,33 @@
+<<<<<<< HEAD
+=======
+[2025-05-07 12:34:24] 127.0.0.1:45246
+GET /resources/gatos HTTP/1.1
+Host:  localhost
+Connection:  close
+============================================================
+[2025-05-07 12:35:17] 127.0.0.1:36208
+DELETE /resources/gatos/7 HTTP/1.1
+Host:  localhost
+Connection:  close
+============================================================
+[2025-05-07 12:35:58] 127.0.0.1:42874
+HEAD /a.mp3 HTTP/1.1
+Host:  localhost
+Connection:  close
+X-custom:  123
+============================================================
+[2025-05-07 12:36:38] 127.0.0.1:49040
+HEAD /a.mp3 HTTP/1.1
+Host:  localhost
+Connection:  close
+============================================================
+[2025-05-07 12:37:51] 127.0.0.1:36738 - Request received:
+HEAD / HTTP/1.1
+Host: localhost
+Connection: close
+Content-Type: text/plain
+X-custom:123
+------------------------------------------------------------
+
+============================================================
+>>>>>>> 029b3ed (Refactor Client and Server)
