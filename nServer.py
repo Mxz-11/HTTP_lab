@@ -36,17 +36,12 @@ class SimpleHTTPServer:
         self.port = port
         self.resources = {}
         self.server_dir = 'Server'
-        
         os.makedirs(self.server_dir, exist_ok=True)
-        
+
     def is_private(self, file_path):
-        """
-        Retorna True si file_path (camino relativo) apunta a la carpeta "private".
-        Se considera privado si el camino normalizado es "private" o comienza con "private" + os.sep.
-        """
         normalized_path = os.path.normpath(file_path)
         return normalized_path == "private" or normalized_path.startswith("private" + os.sep)
-        
+
     def start(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -57,7 +52,7 @@ class SimpleHTTPServer:
             return
         server_socket.listen(5)
         print(f"HTTP Server listening on {self.host}:{self.port}")
-        
+
         while True:
             client_socket, addr = server_socket.accept()
             print(f"Conexión entrante de {addr}")
@@ -67,10 +62,10 @@ class SimpleHTTPServer:
         timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
         ip, port = addr
         log_path = os.path.join(self.server_dir, "private","server.log")
-        
+
         request_lines = [line.strip() for line in headers_raw.strip().splitlines() if line.strip()]
         request_line = request_lines[0] if request_lines else "<empty request>"
-        
+
         headers_clean = "\n".join(request_lines[1:])
         body_display = body
 
@@ -88,12 +83,9 @@ class SimpleHTTPServer:
             f.write("=" * 60 + "\n")
 
     def is_path_traversal(self, file_path):
-        """
-        Verifica si la ruta intenta salir del directorio base.
-        """
         full_path = os.path.abspath(os.path.join(self.server_dir, os.path.normpath(file_path)))
         return not full_path.startswith(os.path.abspath(self.server_dir))
-    
+
     def handle_request(self, client_socket):
         try:
             request_data = b''
@@ -105,11 +97,11 @@ class SimpleHTTPServer:
 
             header_end = request_data.find(b'\r\n\r\n')
             headers_raw = request_data[:header_end].decode('utf-8', errors='ignore')
-            
+
             request_lines = headers_raw.split('\r\n')
             request_line = request_lines[0]
             method, path, _ = request_line.split()
-            
+
             headers = {}
             for line in request_lines[1:]:
                 if ':' in line:
@@ -120,13 +112,13 @@ class SimpleHTTPServer:
             if 'Content-Length' in headers:
                 content_length = int(headers['Content-Length'])
                 body = request_data[header_end + 4:]
-                
+
                 while len(body) < content_length:
                     chunk = client_socket.recv(min(4096, content_length - len(body)))
                     if not chunk:
                         break
                     body += chunk
-            
+
             bina_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.mp3', '.wav', '.mp4', '.avi')
             bina = method in ("POST", "PUT") and path.lower().endswith(bina_extensions)
 
@@ -144,7 +136,7 @@ class SimpleHTTPServer:
                 body_str,
                 headers.get("Content-Type", "")
             )
-            
+
             print(f"Method: {method}, Path: {path}")
 
             response = ""
@@ -190,7 +182,7 @@ class SimpleHTTPServer:
                 client_socket.close()
             except:
                 pass
-    
+
     def get_content_type(self, file_path):
         extension = file_path.split('.')[-1].lower()
         content_types = {
@@ -218,63 +210,57 @@ class SimpleHTTPServer:
     def serve_static(self, file_path, headers=None):
         try:
             if self.is_private(file_path) or self.is_path_traversal(file_path):
-                return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n".encode()
+                return self.build_response("403 Forbidden")
             full_path = os.path.join(self.server_dir, os.path.normpath(file_path))
             if not os.path.exists(full_path) or not os.path.isfile(full_path):
-                return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n".encode()
+                return self.build_response("404 Not Found")
             if headers and 'If-Modified-Since' in headers:
                 file_mtime = datetime.fromtimestamp(os.path.getmtime(full_path))
                 try:
                     client_time = datetime.strptime(headers['If-Modified-Since'], '%Y-%m-%d %H:%M:%S')
                     if file_mtime <= client_time:
-                        response_headers = "HTTP/1.1 304 Not Modified\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
-                        return response_headers.encode()
+                        return self.build_response("304 Not Modified", content="", content_length=0)
                 except ValueError as e:
                     print(f"Error al parsear la fecha If-Modified-Since: {e}")
             content_type = self.get_content_type(full_path)
             with open(full_path, 'rb') as file:
                 content = file.read()
-            response_headers = "HTTP/1.1 200 OK\r\n"
-            response_headers += f"Content-Type: {content_type}\r\n"
-            response_headers += f"Content-Length: {len(content)}\r\n"
-            response_headers += "Connection: close\r\n\r\n"
-            return response_headers.encode() + content
+            return self.build_response(
+                "200 OK",
+                content,
+                content_type=content_type
+            )
         except Exception as e:
             print(f"Error serving file: {e}")
-            return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n".encode()
-    
+            return self.build_response("500 Internal Server Error")
+
     def delete_file(self, file_path):
         try:
             if self.is_private(file_path):
-                return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n"
+                return self.build_response("403 Forbidden")
             full_path = os.path.join(self.server_dir, os.path.normpath(file_path))
             if not os.path.abspath(full_path).startswith(os.path.abspath(self.server_dir)):
                 print(f"Intento de traversal de directorios: {file_path}")
-                return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n"
+                return self.build_response("403 Forbidden")
             if os.path.exists(full_path):
                 os.remove(full_path)
-                response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n"
                 message = f"File {file_path} was successfully deleted"
-                response += f"Content-Length: {len(message)}\r\n\r\n"
-                response += message
-                return response
+                return self.build_response("200 OK", message, content_type="text/plain")
             else:
                 print(f"Archivo no encontrado: {full_path}")
-                return "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n"
+                return self.build_response("404 Not Found", "", content_type="text/plain")
         except Exception as e:
             print(f"Error deleting file: {e}")
-            return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n"
-    
+            return self.build_response("500 Internal Server Error")
+
     def handle_put(self, file_path, headers, content):
         try:
             if self.is_private(file_path):
-                return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n".encode()
-            
+                return self.build_response("403 Forbidden")
             full_path = os.path.join(self.server_dir, os.path.basename(file_path))
             if not os.path.abspath(full_path).startswith(os.path.abspath(self.server_dir)):
-                return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n".encode()
+                return self.build_response("403 Forbidden")
 
-            # Determinar si es contenido binario
             content_type = headers.get('Content-Type', '').lower()
             ext = file_path.split('.')[-1].lower() if '.' in file_path else ''
             is_binary = (
@@ -282,10 +268,9 @@ class SimpleHTTPServer:
                 ext in ['png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav', 'mp4', 'avi']
             )
 
-            # Escribir el archivo
             mode = 'wb' if is_binary or isinstance(content, bytes) else 'w'
             encoding = None if is_binary or isinstance(content, bytes) else 'utf-8'
-            
+
             with open(full_path, mode, encoding=encoding) as f:
                 if isinstance(content, bytes) or is_binary:
                     f.write(content)
@@ -294,97 +279,96 @@ class SimpleHTTPServer:
 
             was_existing = os.path.exists(full_path)
             status = "200 OK" if was_existing else "201 Created"
-            
-            response = f"HTTP/1.1 {status}\r\n"
-            response += "Content-Type: text/plain\r\n"
             message = f"File {file_path} was successfully {'updated' if was_existing else 'created'}"
-            response += f"Content-Length: {len(message)}\r\n\r\n"
-            response += message
-            return response.encode()
-                
+            return self.build_response(status, message, content_type="text/plain")
         except Exception as e:
             print(f"Error handling PUT request: {e}")
-            return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n".encode()
-    
-    def respond_with_json(self, data):
+            return self.build_response("500 Internal Server Error")
+
+    def respond_json(self, data, head_only=False):
         json_data = json.dumps(data, indent=4, ensure_ascii=False)
-        json_bytes = json_data.encode('utf-8')
-        response = f"HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\n"
-        response += f"Content-Length: {len(json_bytes)}\r\n\r\n"
-        return response.encode() + json_bytes
+        json_bytes = json_data.encode("utf-8")
+        headers = (
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: application/json; charset=utf-8\r\n"
+            f"Content-Length: {len(json_bytes)}\r\n"
+            "Connection: close\r\n\r\n"
+        )
+        return headers.encode() if head_only else headers.encode() + json_bytes
+
+    def build_response(self, status_code, content="", content_type="text/plain", content_length=None):
+        if isinstance(content, str):
+            content_bytes = content.encode("utf-8")
+        else:
+            content_bytes = content
+
+        actual_length = content_length if content_length is not None else len(content_bytes)
+
+        headers = f"HTTP/1.1 {status_code}\r\n"
+        headers += f"Content-Type: {content_type}\r\n"
+        headers += f"Content-Length: {actual_length}\r\n"
+        headers += "Connection: close\r\n\r\n"
+
+        return headers.encode() + content_bytes
+
+    def read_json_file(self, path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+
+    def write_json_file(self, path, data):
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
+        except Exception as e:
+            print("Error writing JSON:", e)
 
     def handle_resources(self, method, path, body, headers):
         res_file = os.path.join(self.server_dir, "private", "resources.json")
-        if os.path.exists(res_file):
-            try:
-                with open(res_file, "r") as f:
-                    resources_data = json.load(f)
-            except Exception as e:
-                print("Error leyendo resources.json:", e)
-                resources_data = {}
-        else:
-            resources_data = {}
+        resources_data = self.read_json_file(res_file)
 
         segments = [s for s in path.strip("/").split("/") if s]
         if len(segments) == 1:
             if method == "GET":
-                json_data = json.dumps(resources_data, indent=4, ensure_ascii=False)
-                return f"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {len(json_data)}\r\n\r\n{json_data}"
+                return self.respond_json(resources_data)
             elif method == "HEAD":
-               json_data = json.dumps(resources_data, ensure_ascii=False)
-               json_bytes = json_data.encode("utf-8")
-               return (
-                   b"HTTP/1.1 200 OK\r\n"
-                   b"Content-Type: application/json; charset=utf-8\r\n"
-                   + f"Content-Length: {len(json_bytes)}\r\n\r\n".encode()
-                )
+                return self.respond_json(resources_data, head_only=True)
             else:
-                return "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n"
+                return self.build_response("405 Method Not Allowed")
 
         category = segments[1]
         if category not in resources_data:
             if method == "POST":
                 resources_data[category] = []
             else:
-                return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
+                return self.build_response("404 Not Found")
         category_data = resources_data.get(category, [])
-        
+
         if len(segments) == 2:
             if method == "GET":
-                json_data = json.dumps(category_data, indent=4, ensure_ascii=False)
-                json_bytes = json_data.encode('utf-8')
-                return (
-                    b"HTTP/1.1 200 OK\r\n"
-                    b"Content-Type: application/json; charset=utf-8\r\n"
-                    + f"Content-Length: {len(json_bytes)}\r\n\r\n".encode()
-                    + json_bytes
-                )
+                return self.respond_json(category_data)
             elif method == "HEAD":
-                json_data = json.dumps(category_data, indent=4, ensure_ascii=False)
-                json_bytes = json_data.encode('utf-8')
-                return (
-                    b"HTTP/1.1 200 OK\r\n"
-                    b"Content-Type: application/json; charset=utf-8\r\n"
-                    + f"Content-Length: {len(json_bytes)}\r\n\r\n".encode()
-                )
-
+                return self.respond_json(category_data, head_only=True)
             elif method == "POST":
                 try:
                     new_obj = json.loads(body)
                     new_id = 1
                     if category_data:
                         new_id = max([obj.get("id", 0) for obj in category_data] or [0]) + 1
-                    
+
                     ordered_obj = {"id": new_id}
                     ordered_obj.update(new_obj)
-                    
+
                     category_data.append(ordered_obj)
                     resources_data[category] = category_data
-                    self.write_resources_file(res_file, resources_data)
-                    return "HTTP/1.1 201 Created\r\nContent-Length: 0\r\n\r\n"
+                    self.write_json_file(res_file, resources_data)
+                    return self.build_response("201 Created")
                 except Exception as e:
                     print("Error en POST /resources/{categoria}:", e)
-                    return "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n"
+                    return self.build_response("400 Bad Request")
             elif method == "PUT":
                 try:
                     new_data = json.loads(body)
@@ -394,84 +378,68 @@ class SimpleHTTPServer:
                         new_id = 1
                         if category_data:
                             new_id = max([obj.get("id", 0) for obj in category_data] or [0]) + 1
-                        
+
                         ordered_obj = {"id": new_id}
                         ordered_obj.update(new_data)
-                        
+
                         category_data.append(ordered_obj)
                         resources_data[category] = category_data
-                    
-                    self.write_resources_file(res_file, resources_data)
-                    return "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
+
+                    self.write_json_file(res_file, resources_data)
+                    return self.build_response("200 OK")
                 except Exception as e:
                     print("Error en PUT /resources/{categoria}:", e)
-                    return "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n"
+                    return self.build_response("400 Bad Request")
             else:
-                return "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n"
-        
+                return self.build_response("405 Method Not Allowed")
+
         elif len(segments) == 3:
             resource_id = segments[2]
             if method == "HEAD":
-                exists = any(str(obj.get("id")) == resource_id for obj in category_data)
-                if exists:
-                    return "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
+                found = next((obj for obj in category_data if str(obj.get("id")) == resource_id), None)
+                if found:
+                    return self.respond_json(found, head_only=True)
                 else:
-                    return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
+                    return self.build_response("404 Not Found")
             elif method == "GET":
-                found = None
-                for obj in category_data:
-                    if str(obj.get("id")) == resource_id:
-                        found = obj
-                        break
+                found = next((obj for obj in category_data if str(obj.get("id")) == resource_id), None)
                 if found is None:
-                    return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
-                json_data = json.dumps(found, indent=4, ensure_ascii=False)
-                return f"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {len(json_data)}\r\n\r\n{json_data}"
+                    return self.build_response("404 Not Found")
+                return self.respond_json(found)
             elif method == "PUT":
                 try:
                     new_obj = json.loads(body)
-                    
                     updated = False
                     for i, obj in enumerate(category_data):
                         if str(obj.get("id")) == resource_id:
                             ordered_obj = {"id": obj["id"]}
-                            ordered_obj.update(new_obj) 
-                            
+                            ordered_obj.update(new_obj)
                             category_data[i] = ordered_obj
                             updated = True
                             break
-                    
+
                     if not updated:
-                        return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
-                    
+                        return self.build_response("404 Not Found")
+
                     resources_data[category] = category_data
-                    self.write_resources_file(res_file, resources_data)
-                    return "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
-                    
+                    self.write_json_file(res_file, resources_data)
+                    return self.build_response("200 OK")
+
                 except Exception as e:
                     print("Error en PUT /resources/{categoria}/{id}:", e)
-                    return "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n"
+                    return self.build_response("400 Bad Request")
             elif method == "DELETE":
                 initial_length = len(category_data)
                 category_data = [obj for obj in category_data if str(obj.get("id")) != resource_id]
                 if len(category_data) == initial_length:
-                    return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
+                    return self.build_response("404 Not Found")
                 resources_data[category] = category_data
-                self.write_resources_file(res_file, resources_data)
-                return "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
+                self.write_json_file(res_file, resources_data)
+                return self.build_response("200 OK")
             else:
-                return "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n"
+                return self.build_response("405 Method Not Allowed")
         else:
-            return "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n"
-
-
-    def write_resources_file(self, file_path, data):
-        try:
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            with open(file_path, "w", encoding='utf-8') as f:
-                json.dump(data, f, indent=4, ensure_ascii=False)
-        except Exception as e:
-            print("Error writing the resources file:", e)
+            return self.build_response("400 Bad Request")
 
 if __name__ == "__main__":
     try:
