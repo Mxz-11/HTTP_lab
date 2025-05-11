@@ -23,11 +23,8 @@ Creation Date:
 Last Modified:
     19/3/2025
 """
-
 import socket
-import sys
 from datetime import datetime
-import os
 
 class HttpClient:
     def __init__(self, host="localhost", port=80, timeout=8):
@@ -55,9 +52,8 @@ class HttpClient:
                     break
                 response += chunk
             if not is_binary:
-                return response.decode('utf-8', errors='replace').strip('b\'')
+                return response.decode('utf-8', errors='replace')
             return response
-
         except Exception as e:
             print(f"Error sending/receiving data: {e}")
             return None
@@ -71,64 +67,29 @@ class HttpResponseUtils:
     @staticmethod
     def parse_response(response, is_binary=False):
         try:
-            header_end = response.find(b'\r\n\r\n') if isinstance(response, bytes) else response.find('\r\n\r\n')
-            if header_end == -1:
-                return None, None, None
             if isinstance(response, bytes):
-                headers = response[:header_end].decode('utf-8')
+                header_end = response.find(b'\r\n\r\n')
+                if header_end == -1:
+                    return None, None, None
+                headers = response[:header_end].decode('utf-8', errors='replace')
                 content = response[header_end + 4:]
             else:
+                header_end = response.find('\r\n\r\n')
+                if header_end == -1:
+                    return None, None, None
                 headers = response[:header_end]
                 content = response[header_end + 4:]
                 if is_binary:
                     content = content.encode('utf-8')
-
             content_type = None
             for line in headers.split('\r\n'):
                 if line.lower().startswith('content-type:'):
                     content_type = line.split(':', 1)[1].strip()
                     break
-
             return headers, content_type, content
-
         except Exception as e:
             print(f"Error parsing response: {e}")
             return None, None, None
-
-    @staticmethod
-    def handle_binary_file(response):
-        try:
-            header_end = response.find(b'\r\n\r\n')
-            if header_end == -1:
-                return None
-
-            headers = response[:header_end].decode('utf-8')
-            content = response[header_end + 4:]
-
-            if '200 OK' not in headers:
-                print(f"Error in response: {headers}")
-                return None
-
-            content_type = None
-            for line in headers.split('\r\n'):
-                if line.startswith('Content-Type:'):
-                    content_type = line.split(': ')[1].strip()
-                    break
-
-            if not content_type:
-                print("No Content-Type found.")
-                return None
-
-            allowed_prefixes = ['image/', 'audio/', 'video/']
-            if not any(content_type.startswith(prefix) for prefix in allowed_prefixes):
-                print(f"Invalid content type for binary: {content_type}")
-                return None
-
-            return content
-
-        except Exception as e:
-            print(f"Error handling binary file: {e}")
-            return None
 
     @staticmethod
     def save_content(content, filename, is_binary=False):
@@ -163,7 +124,6 @@ def build_request(method, path, host, custom_headers=None, body=None, content_ty
     if custom_headers:
         headers.extend(custom_headers)
     headers.append("")
-
     if body is not None:
         if isinstance(body, bytes):
             request = "\r\n".join(headers).encode('utf-8') + b"\r\n" + body
@@ -174,37 +134,99 @@ def build_request(method, path, host, custom_headers=None, body=None, content_ty
     return request
 
 def get_user_input():
-    raw_host = input("Enter host or URL (blank for 'localhost'): ").strip()
-    if not raw_host:
-        raw_host = "localhost"
-
+    raw_host = input("Enter host or URL (blank for 'localhost'): ").strip() or "localhost"
     raw_port = input("Enter server port (blank for 80): ").strip()
-    if not raw_port:
-        port = 80
-    else:
-        try:
-            port = int(raw_port)
-        except:
-            port = 80
-
+    port = int(raw_port) if raw_port.isdigit() else 80
     base_path = input("Enter base path (blank for ''): ").strip()
-
     for prefix in ["http://", "https://"]:
         if raw_host.startswith(prefix):
             raw_host = raw_host[len(prefix):]
             break
-
     if "/" in raw_host:
         raw_host = raw_host.split("/", 1)[0]
-
     print(f"\nUsing host={raw_host}, port={port}, base_path={base_path}")
     print("(No SSL). If the server needs HTTPS on port 443, this will fail.\n")
-
     return raw_host, port, base_path
+
+def get_custom_headers():
+    headers = []
+    print("Enter any custom headers (blank line to finish):")
+    while True:
+        h = input().strip()
+        if not h:
+            break
+        headers.append(h)
+    return headers
+
+def get_body_from_input():
+    print("Enter body content in JSON format (end input with a blank line):")
+    lines = []
+    while True:
+        l = input()
+        if not l.strip():
+            break
+        lines.append(l)
+    return "\n".join(lines)
+
+def get_body_for_post_put(path, method):
+    skip_file = False
+    content_type = None
+    boundary = None
+    body = None
+    if path.startswith("/resources"):
+        parts = path.strip("/").split("/")
+        if method == "POST":
+            if len(parts) == 1:
+                cat = input("Enter resource category: ").strip()
+                path = f"/resources/{cat}"
+            elif len(parts) != 2:
+                print("Invalid POST path. Format: /resources/{category}")
+                return path, None, None, None, True
+        elif method == "PUT":
+            if len(parts) == 1:
+                cat = input("Enter resource category: ").strip()
+                path = f"/resources/{cat}"
+            elif len(parts) != 3:
+                print("Invalid PUT path. Format: /resources/{category}/{id}")
+                return path, None, None, None, True
+        body = get_body_from_input()
+        content_type = "application/json"
+        skip_file = True
+    return path, body, content_type, boundary, skip_file
+
+def get_body_from_file():
+    filename = input("Enter local filename (relative path): ").strip()
+    ext = filename.lower().split('.')[-1]
+    is_binary = ext in ['png','jpg','jpeg','gif','mp3','wav','mp4','avi']
+    content_type = {
+        'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'gif': 'image/gif',
+        'mp3': 'audio/mpeg', 'wav': 'audio/wav'
+    }.get(ext, 'application/octet-stream')
+    if ext in ['txt','html','css','json']:
+        content_type = 'text/plain'
+        is_binary = False
+    mode = 'rb' if is_binary else 'r'
+    with open(filename, mode) as f:
+        body = f.read()
+    boundary = "----WebKitFormBoundary" + datetime.now().strftime("%Y%m%d%H%M%S") if is_binary else None
+    return body, content_type, is_binary, boundary
+
+def save_and_preview(headers, content_type, content):
+    is_binary_content = content_type and any(t in content_type.lower() for t in ['image/', 'audio/', 'video/', 'application/octet-stream'])
+    if input("Do you want to save the response to a file? (y/N): ").strip().lower() == 'y':
+        save_filename = input("Enter filename to save response: ").strip()
+        if save_filename and content:
+            if HttpResponseUtils.save_content(content, save_filename, is_binary_content):
+                print(f"\nContent saved to: {save_filename}")
+    if content and not is_binary_content:
+        print("\n=== Content Preview ===\n")
+        try:
+            print(content.decode() if isinstance(content, bytes) else content)
+        except:
+            print("(Binary content)")
 
 def main():
     raw_host, port, base_path = get_user_input()
-
     while True:
         try:
             method = input("\nEnter HTTP method (GET/HEAD/POST/PUT/DELETE) or 'exit': ").upper()
@@ -213,97 +235,27 @@ def main():
             if method not in ["GET","HEAD","POST","PUT","DELETE"]:
                 print("Invalid method.")
                 continue
-
-            path = input("Enter the resource path (blank => use base_path): ").strip()
-            if not path:
-                path = base_path
-
-            custom_headers = []
-            print("Enter any custom headers you want (e.g. 'X-Custom: 123'). Blank line to finish.")
-            while True:
-                hline = input().strip()
-                if not hline:
-                    break
-                custom_headers.append(hline)
-
+            path = input("Enter the resource path (blank => use base_path): ").strip() or base_path
+            custom_headers = get_custom_headers()
             body = None
             is_binary = False
             content_type = None
             boundary = None
-
             if method == 'GET':
                 ext = path.split('.')[-1].lower() if '.' in path else ''
                 is_binary = ext in ['png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav', 'mp4', 'avi']
-
-            skip_file = False
-            if method in ["POST","PUT"] and path.startswith("/resources"):
-                parts = path.strip("/").split("/")
-                if method == "POST":
-                    if len(parts) == 1:
-                        cat = input("Enter resource category: ").strip()
-                        path = f"/resources/{cat}"
-                    elif len(parts) == 2:
-                        pass
+            if method in ["POST","PUT"]:
+                path, body, content_type, boundary, skip_file = get_body_for_post_put(path, method)
+                if not skip_file:
+                    if input("Send from local file? (y/N): ").strip().lower() == 'y':
+                        try:
+                            body, content_type, is_binary, boundary = get_body_from_file()
+                        except Exception as e:
+                            print(f"Error reading file: {e}")
+                            continue
                     else:
-                        print("Invalid POST path. Format: /resources/{category}")
-                        continue
-                elif method == "PUT":
-                    if len(parts) < 4:
-                        if len(parts) == 1:
-                            cat = input("Enter resource category: ").strip()
-                            path = f"/resources/{cat}"
-                        elif len(parts) == 3:
-                            pass    
-                    else:
-                        print("Invalid PUT path. Format: /resources/{category}/{id}")
-                        continue
-                print("Enter body content in JSON format (end input with a blank line):")
-                lines = []
-                while True:
-                    l = input()
-                    if not l.strip():
-                        break
-                    lines.append(l)
-                body = "\n".join(lines)
-                content_type = "application/json"
-                skip_file = True
-
-            if method in ["POST","PUT"] and not skip_file:
-                choice = input("Send from local file? (y/N): ").strip().lower()
-                if choice == 'y':
-                    filename = input("Enter local filename (relative path): ").strip()
-                    try:
-                        ext = filename.lower().split('.')[-1]
-                        is_binary = ext in ['png','jpg','jpeg','gif','mp3','wav','mp4','avi']
-                        content_type = 'application/octet-stream'
-                        if ext in ['jpg','jpeg']:
-                            content_type = 'image/jpeg'
-                        elif ext == 'png': content_type = 'image/png'
-                        elif ext == 'gif': content_type = 'image/gif'
-                        elif ext == 'mp3': content_type = 'audio/mpeg'
-                        elif ext == 'wav': content_type = 'audio/wav'
-                        elif ext in ['txt','html','css','json']:
-                            content_type = 'text/plain'
-                            is_binary = False
-                        mode = 'rb' if is_binary else 'r'
-                        with open(filename, mode) as f:
-                            body = f.read()
-                        if is_binary:
-                            boundary = "----WebKitFormBoundary" + datetime.now().strftime("%Y%m%d%H%M%S")
-                    except Exception as e:
-                        print(f"Error reading file: {e}")
-                        continue
-                else:
-                    print("Enter body content in JSON format (end input with a blank line):")
-                    lines = []
-                    while True:
-                        l = input()
-                        if not l.strip():
-                            break
-                        lines.append(l)
-                    body = "\n".join(lines)
-                    content_type = "application/json"
-
+                        body = get_body_from_input()
+                        content_type = "application/json"
             request = build_request(
                 method=method,
                 path=path,
@@ -314,35 +266,16 @@ def main():
                 is_binary=is_binary,
                 boundary=boundary
             )
-
             client = HttpClient(raw_host, port)
             client.connect()
             response = client.send_request(request, is_binary=is_binary)
             client.close()
-
             if response:
                 headers, content_type, content = HttpResponseUtils.parse_response(response, is_binary)
                 if headers:
                     print("\n=== Response Headers ===\n")
                     print(headers)
-                    is_binary_content = content_type and any(t in content_type.lower()
-                                                            for t in ['image/', 'audio/', 'video/', 'application/octet-stream'])
-
-                    save_response = input("Do you want to save the response to a file? (y/N): ").strip().lower() == 'y'
-                    if save_response:
-                        save_filename = input("Enter filename to save response: ").strip()
-                        if not save_filename:
-                            print("Invalid filename, will only show response")
-                        elif content:
-                            if HttpResponseUtils.save_content(content, save_filename, is_binary_content):
-                                print(f"\nContent saved to: {save_filename}")
-
-                    if content and not is_binary_content:
-                        print("\n=== Content Preview ===\n")
-                        try:
-                            print(content.decode() if isinstance(content, bytes) else content)
-                        except:
-                            print("(Binary content)")
+                    save_and_preview(headers, content_type, content)
         except Exception as e:
             print(f"Error: {e}")
 
