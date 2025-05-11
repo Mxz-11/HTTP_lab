@@ -29,117 +29,151 @@ import sys
 from datetime import datetime
 import os
 
-def create_socket():
-    """Create a plain (non-SSL) TCP socket."""
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(8)          
-    return sock
+class HttpClient:
+    def __init__(self, host="localhost", port=80, timeout=8):
+        self.host = host
+        self.port = port
+        self.timeout = timeout
+        self.sock = None
 
-def connect_socket(sock, host="localhost", port=80):
-    """Connect the socket in plain text."""
-    sock.connect((host, port))
-    print(f"Connected (plain) to {host}:{port}")
+    def connect(self):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.settimeout(self.timeout)
+        self.sock.connect((self.host, self.port))
+        print(f"Connected (plain) to {self.host}:{self.port}")
 
-def send_request(sock, message, is_binary=False):
-    """Send HTTP request and read response"""
-    try:
+    def send_request(self, message, is_binary=False):
+        try:
+            if isinstance(message, str):
+                self.sock.sendall(message.encode('utf-8'))
+            else:
+                self.sock.sendall(message)
+            response = b''
+            while True:
+                chunk = self.sock.recv(4096)
+                if not chunk:
+                    break
+                response += chunk
+            if not is_binary:
+                return response.decode('utf-8', errors='replace').strip('b\'')
+            return response
 
-        if isinstance(message, str):
-            sock.sendall(message.encode('utf-8'))
-        else:
-            sock.sendall(message)
-
-        response = b''
-        while True:
-            chunk = sock.recv(4096)
-            if not chunk:
-                break
-            response += chunk
-
-        if not is_binary:
-            return response.decode('utf-8', errors='replace').strip('b\'')
-        return response
-    
-    except Exception as e:
-        print(f"Error sending/receiving data: {e}")
-        return None
-
-def handle_binary_file(response):
-    """Handle any binary data from response (image, audio, video, etc.)"""
-    try:
-        header_end = response.find(b'\r\n\r\n')
-        if header_end == -1:
-            return None
-        
-        headers = response[:header_end].decode('utf-8')
-        content = response[header_end + 4:]
-
-        if '200 OK' not in headers:
-            print(f"Error in response: {headers}")
+        except Exception as e:
+            print(f"Error sending/receiving data: {e}")
             return None
 
-        content_type = None
-        for line in headers.split('\r\n'):
-            if line.startswith('Content-Type:'):
-                content_type = line.split(': ')[1].strip()
-                break
-        
-        if not content_type:
-            print("No Content-Type found.")
-            return None
-        
-        allowed_prefixes = ['image/', 'audio/', 'video/']
-        if not any(content_type.startswith(prefix) for prefix in allowed_prefixes):
-            print(f"Invalid content type for binary: {content_type}")
-            return None
+    def close(self):
+        if self.sock:
+            self.sock.close()
+            self.sock = None
 
-        return content
-    
-    except Exception as e:
-        print(f"Error handling binary file: {e}")
-        return None
+class HttpResponseUtils:
+    @staticmethod
+    def parse_response(response, is_binary=False):
+        try:
+            header_end = response.find(b'\r\n\r\n') if isinstance(response, bytes) else response.find('\r\n\r\n')
+            if header_end == -1:
+                return None, None, None
+            if isinstance(response, bytes):
+                headers = response[:header_end].decode('utf-8')
+                content = response[header_end + 4:]
+            else:
+                headers = response[:header_end]
+                content = response[header_end + 4:]
+                if is_binary:
+                    content = content.encode('utf-8')
 
-def handle_response_content(response, is_binary=False):
-    """Extract content and headers from response"""
-    try:
-        header_end = response.find(b'\r\n\r\n') if isinstance(response, bytes) else response.find('\r\n\r\n')
-        if header_end == -1:
+            content_type = None
+            for line in headers.split('\r\n'):
+                if line.lower().startswith('content-type:'):
+                    content_type = line.split(':', 1)[1].strip()
+                    break
+
+            return headers, content_type, content
+
+        except Exception as e:
+            print(f"Error parsing response: {e}")
             return None, None, None
 
-        if isinstance(response, bytes):
+    @staticmethod
+    def handle_binary_file(response):
+        try:
+            header_end = response.find(b'\r\n\r\n')
+            if header_end == -1:
+                return None
+
             headers = response[:header_end].decode('utf-8')
             content = response[header_end + 4:]
+
+            if '200 OK' not in headers:
+                print(f"Error in response: {headers}")
+                return None
+
+            content_type = None
+            for line in headers.split('\r\n'):
+                if line.startswith('Content-Type:'):
+                    content_type = line.split(': ')[1].strip()
+                    break
+
+            if not content_type:
+                print("No Content-Type found.")
+                return None
+
+            allowed_prefixes = ['image/', 'audio/', 'video/']
+            if not any(content_type.startswith(prefix) for prefix in allowed_prefixes):
+                print(f"Invalid content type for binary: {content_type}")
+                return None
+
+            return content
+
+        except Exception as e:
+            print(f"Error handling binary file: {e}")
+            return None
+
+    @staticmethod
+    def save_content(content, filename, is_binary=False):
+        try:
+            mode = 'wb' if is_binary else 'w'
+            encoding = None if is_binary else 'utf-8'
+            with open(filename, mode, encoding=encoding) as f:
+                f.write(content)
+            return True
+        except Exception as e:
+            print(f"Error saving file: {e}")
+            return False
+
+def build_request(method, path, host, custom_headers=None, body=None, content_type=None, is_binary=False, boundary=None):
+    if not path.startswith("/"):
+        path = "/" + path
+    headers = [
+        f"{method} {path} HTTP/1.1",
+        f"Host: {host}",
+        "Connection: close"
+    ]
+    if content_type:
+        if boundary:
+            headers.append(f"Content-Type: multipart/form-data; boundary={boundary}")
         else:
-            headers = response[:header_end]
-            content = response[header_end + 4:]
-            if is_binary:
-                content = content.encode('utf-8')
+            headers.append(f"Content-Type: {content_type}")
+    if body is not None:
+        if isinstance(body, bytes):
+            headers.append(f"Content-Length: {len(body)}")
+        else:
+            headers.append(f"Content-Length: {len(body.encode('utf-8'))}")
+    if custom_headers:
+        headers.extend(custom_headers)
+    headers.append("")
 
-        content_type = None
-        for line in headers.split('\r\n'):
-            if line.lower().startswith('content-type:'):
-                content_type = line.split(':', 1)[1].strip()
-                break
+    if body is not None:
+        if isinstance(body, bytes):
+            request = "\r\n".join(headers).encode('utf-8') + b"\r\n" + body
+        else:
+            request = "\r\n".join(headers) + "\r\n" + body
+    else:
+        request = "\r\n".join(headers) + "\r\n"
+    return request
 
-        return headers, content_type, content
-    
-    except Exception as e:
-        print(f"Error parsing response: {e}")
-        return None, None, None
-
-def save_response_content(content, filename, is_binary=False):
-    """Save content to file in appropriate mode"""
-    try:
-        mode = 'wb' if is_binary else 'w'
-        encoding = None if is_binary else 'utf-8'
-        with open(filename, mode, encoding=encoding) as f:
-            f.write(content)
-        return True
-    except Exception as e:
-        print(f"Error saving file: {e}")
-        return False
-
-def main():
+def get_user_input():
     raw_host = input("Enter host or URL (blank for 'localhost'): ").strip()
     if not raw_host:
         raw_host = "localhost"
@@ -166,6 +200,11 @@ def main():
     print(f"\nUsing host={raw_host}, port={port}, base_path={base_path}")
     print("(No SSL). If the server needs HTTPS on port 443, this will fail.\n")
 
+    return raw_host, port, base_path
+
+def main():
+    raw_host, port, base_path = get_user_input()
+
     while True:
         try:
             method = input("\nEnter HTTP method (GET/HEAD/POST/PUT/DELETE) or 'exit': ").upper()
@@ -175,88 +214,28 @@ def main():
                 print("Invalid method.")
                 continue
 
-            if method == 'GET':
-                path = input("Enter the resource path (blank => use base_path): ").strip()
-                if not path:
-                    path = base_path
-                if not path.startswith("/"):
-                    path = "/" + path
-
-                ext = path.split('.')[-1].lower() if '.' in path else ''
-                is_binary = ext in ['png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav', 'mp4', 'avi']
-
-                save_response = input("Do you want to save the response to a file? (y/N): ").strip().lower() == 'y'
-                if save_response:
-                    save_filename = input("Enter filename to save response: ").strip()
-                    if not save_filename:
-                        print("Invalid filename, will only show response")
-                        save_response = False
-
-                custom_headers = []
-                print("Enter any custom headers you want (e.g. 'X-Custom: 123'). Blank line to finish.")
-                while True:
-                    hline = input().strip()
-                    if not hline:
-                        break
-                    custom_headers.append(hline)
-
-                request = f"GET {path} HTTP/1.1\r\n"
-                request += f"Host: {raw_host}\r\n"
-                request += "Connection: close\r\n"
-                if is_binary:
-                    request += "Accept: */*\r\n"
-                for header in custom_headers:
-                    request += f"{header}\r\n"
-                request += "\r\n"
-
-                sock = create_socket()
-                connect_socket(sock, raw_host, port)
-                response = send_request(sock, request, is_binary=is_binary)
-                sock.close()
-
-                if response:
-                    headers, content_type, content = handle_response_content(response, is_binary)
-                    if headers:
-                        print("\n=== Response Headers ===\n")
-                        print(headers)
-
-                        is_binary_content = content_type and any(t in content_type.lower()
-                                                                for t in ['image/', 'audio/', 'video/', 'application/octet-stream'])
-
-                        if save_response and content:
-                            if save_response_content(content, save_filename, is_binary_content):
-                                print(f"\nContent saved to: {save_filename}")
-
-                        if content and not is_binary_content:
-                            print("\n=== Content Preview ===\n")
-                            try:
-                                print(content.decode() if isinstance(content, bytes) else content)
-                            except:
-                                print("(Binary content)")
-                continue
-
-
-
             path = input("Enter the resource path (blank => use base_path): ").strip()
             if not path:
                 path = base_path
-            if not path.startswith("/"):
-                path = "/"+path
 
             custom_headers = []
             print("Enter any custom headers you want (e.g. 'X-Custom: 123'). Blank line to finish.")
             while True:
-                hline = input()
-                if not hline.strip():
+                hline = input().strip()
+                if not hline:
                     break
                 custom_headers.append(hline)
 
             body = None
             is_binary = False
-            content_type = 'text/plain'
+            content_type = None
+            boundary = None
+
+            if method == 'GET':
+                ext = path.split('.')[-1].lower() if '.' in path else ''
+                is_binary = ext in ['png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav', 'mp4', 'avi']
 
             skip_file = False
-
             if method in ["POST","PUT"] and path.startswith("/resources"):
                 parts = path.strip("/").split("/")
                 if method == "POST":
@@ -311,11 +290,6 @@ def main():
                             body = f.read()
                         if is_binary:
                             boundary = "----WebKitFormBoundary" + datetime.now().strftime("%Y%m%d%H%M%S")
-                            parts = [f"{method} {path} HTTP/1.1", f"Host: {raw_host}", f"Content-Type: multipart/form-data; boundary={boundary}", f"Content-Length: {len(body)}"] + custom_headers + [""]
-                            request = "\r\n".join(parts).encode('utf-8') + b"\r\n" + body
-                        else:
-                            parts = [f"{method} {path} HTTP/1.1", f"Host: {raw_host}","Connection: close", f"Content-Type: {content_type}", f"Content-Length: {len(body)}"] + custom_headers + [""]
-                            request = "\r\n".join(parts) + "\r\n" + body
                     except Exception as e:
                         print(f"Error reading file: {e}")
                         continue
@@ -330,32 +304,45 @@ def main():
                     body = "\n".join(lines)
                     content_type = "application/json"
 
-            # Construct and send request
-            parts = [f"{method} {path} HTTP/1.1", f"Host: {raw_host}", "Connection: close", f"Content-Type: {content_type}"]
-            if body is not None:
-                parts.append(f"Content-Length: {len(body)}")
-            parts.extend(custom_headers)
-            parts.append("")
-            headers = "\r\n".join(parts)
-            if body is not None:
-                if isinstance(body, bytes):
-                    request = headers.encode('utf-8') + b"\r\n" + body
-                else:
-                    request = headers + "\r\n" + body
-            else:
-                request = headers + "\r\n"
+            request = build_request(
+                method=method,
+                path=path,
+                host=raw_host,
+                custom_headers=custom_headers,
+                body=body,
+                content_type=content_type,
+                is_binary=is_binary,
+                boundary=boundary
+            )
 
-            sock = create_socket()
-            connect_socket(sock, raw_host, port)
-            response = send_request(sock, request, is_binary=is_binary)
-            sock.close()
+            client = HttpClient(raw_host, port)
+            client.connect()
+            response = client.send_request(request, is_binary=is_binary)
+            client.close()
 
             if response:
-                print("\n=== Response ===\n")
-                if isinstance(response, bytes):
-                    print(response.decode('utf-8', errors='replace'))
-                else:
-                    print(response)
+                headers, content_type, content = HttpResponseUtils.parse_response(response, is_binary)
+                if headers:
+                    print("\n=== Response Headers ===\n")
+                    print(headers)
+                    is_binary_content = content_type and any(t in content_type.lower()
+                                                            for t in ['image/', 'audio/', 'video/', 'application/octet-stream'])
+
+                    save_response = input("Do you want to save the response to a file? (y/N): ").strip().lower() == 'y'
+                    if save_response:
+                        save_filename = input("Enter filename to save response: ").strip()
+                        if not save_filename:
+                            print("Invalid filename, will only show response")
+                        elif content:
+                            if HttpResponseUtils.save_content(content, save_filename, is_binary_content):
+                                print(f"\nContent saved to: {save_filename}")
+
+                    if content and not is_binary_content:
+                        print("\n=== Content Preview ===\n")
+                        try:
+                            print(content.decode() if isinstance(content, bytes) else content)
+                        except:
+                            print("(Binary content)")
         except Exception as e:
             print(f"Error: {e}")
 
