@@ -102,7 +102,7 @@ class HttpResponseUtils:
         except Exception as e:
             print(f"Error saving file: {e}")
             return False
-
+    #! creo que is_binary no se esta usando
 def build_request(method, path, host, custom_headers=None, body=None, content_type=None, is_binary=False, boundary=None):
     if not path.startswith("/"):
         path = "/" + path
@@ -211,7 +211,7 @@ def get_body_from_file():
     boundary = "----WebKitFormBoundary" + datetime.now().strftime("%Y%m%d%H%M%S") if is_binary else None
     return body, content_type, is_binary, boundary
 
-def save_and_preview(headers, content_type, content):
+def save_and_preview(headers, content_type, content): #! TODO: Revisar si se puede quitar headers en esta funcion
     is_binary_content = content_type and any(t in content_type.lower() for t in ['image/', 'audio/', 'video/', 'application/octet-stream'])
     if input("Do you want to save the response to a file? (y/N): ").strip().lower() == 'y':
         save_filename = input("Enter filename to save response: ").strip()
