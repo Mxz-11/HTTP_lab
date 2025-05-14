@@ -1,0 +1,141 @@
+{"name": "prueba", "origin": "España", "size": "Very big"}
+
+{"hola": "mundo"}
+
+tcp.port == 8080 || tcp.port == 8080
+
+{
+    "gatos": [
+        {
+            "id": 1,
+            "nombre": "Maine Coon",
+            "origen": "Estados Unidos",
+            "tamaño": "Grande",
+            "curiosidad": "Es una de las razas más grandes del mundo felino doméstico."
+        },
+        {
+            "id": 2,
+            "nombre": "Siamés",
+            "origen": "Tailandia",
+            "tamaño": "Mediano",
+            "curiosidad": "Se le considera una raza real en su país de origen."
+        },
+        {
+            "id": 3,
+            "nombre": "Esfinge",
+            "origen": "Canadá",
+            "tamaño": "Mediano",
+            "curiosidad": "A pesar de no tener pelo, necesita baños frecuentes por su piel grasa."
+        },
+        {
+            "id": 4,
+            "nombre": "Bengalí",
+            "origen": "Estados Unidos",
+            "tamaño": "Grande",
+            "curiosidad": "Proviene del cruce entre gatos domésticos y gatos leopardo asiáticos."
+        },
+        {
+            "id": 5,
+            "nombre": "Juanlu",
+            "origen": "Estados Afganos",
+            "tamaño": "Standard"
+        },
+        {
+            "id": 6,
+            "nombre": "Siamés Actualizado",
+            "origen": "Tailandia",
+            "tamaño": "Mediano"
+        },
+        {
+            "id": 7,
+            "nombre": "Siamés gatuno",
+            "origen": "Tailandia",
+            "tamaño": "Mediano"
+        }
+    ],
+    "perros": [
+        {
+            "id": 1,
+            "nombre": "Labrador Retriever",
+            "origen": "Canadá",
+            "tamaño": "Grande",
+            "curiosidad": "Es una de las razas más populares del mundo por su carácter amigable y entrenabilidad."
+        },
+        {
+            "id": 2,
+            "nombre": "Pastor Alemán",
+            "origen": "Alemania",
+            "tamaño": "Grande",
+            "curiosidad": "Se destaca como perro policía y de trabajo por su inteligencia y obediencia."
+        },
+        {
+            "id": 3,
+            "nombre": "Chihuahua",
+            "origen": "México",
+            "tamaño": "Pequeño",
+            "curiosidad": "Es una de las razas más pequeñas del mundo, pero con gran temperamento."
+        },
+        {
+            "id": 4,
+            "nombre": "Husky Siberiano",
+            "origen": "Rusia",
+            "tamaño": "Mediano",
+            "curiosidad": "Famoso por su resistencia al frío y su capacidad para tirar trineos en largas distancias."
+        },
+        {
+            "id": 5,
+            "nombre": "Bulldog Inglés",
+            "origen": "Reino Unido",
+            "tamaño": "Mediano"
+        },
+        {
+            "id": 6,
+            "nombre": "Beagle",
+            "origen": "Reino Unido",
+            "tamaño": "Pequeño"
+        },
+        {
+            "id": 7,
+            "nombre": "Dálmata",
+            "origen": "Croacia",
+            "tamaño": "Mediano"
+        }
+    ],
+    "dinos":[
+        {
+            "id": 1,
+            "nombre": "Tyrannosaurus Rex",
+            "periodo": "Cretácico tardío",
+            "tamaño": "Muy grande",
+            "curiosidad": "Tenía la mordida terrestre más potente jamás medida."
+        },
+        {
+            "id": 2,
+            "nombre": "Triceratops",
+            "periodo": "Cretácico tardío",
+            "tamaño": "Grande",
+            "curiosidad": "Sus tres cuernos podían alcanzar 1 m de longitud."
+        },
+        {
+            "id": 3,
+            "nombre": "Velociraptor",
+            "periodo": "Cretácico tardío",
+            "tamaño": "Pequeño",
+            "curiosidad": "Probablemente estaba cubierto de plumas."
+        },
+        {
+            "id": 4,
+            "nombre": "Brachiosaurus",
+            "periodo": "Jurásico tardío",
+            "tamaño": "Enorme",
+            "curiosidad": "Su cuello levantaba la cabeza a 13 m de altura."
+        },
+        {
+            "id": 5,
+            "nombre": "Stegosaurus",
+            "periodo": "Jurásico tardío",
+            "tamaño": "Grande",
+            "curiosidad": "Las placas de la espalda servían para termorregularse."
+        }
+    ]
+}
